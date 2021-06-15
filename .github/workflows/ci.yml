@@ -1,0 +1,36 @@
+---
+name: Github Action
+
+on:
+  push:
+  pull_request:
+
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # https://github.com/luizm/action-sh-checker
+      - name: sh-checker
+        uses: luizm/action-sh-checker@v0.3.0
+        with:
+          sh_checker_comment: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHELLCHECK_OPTS: -e SC1004
+          SHFMT_OPTS: -s -i 2
+
+      # https://github.com/karancode/yamllint-github-action
+      - name: yamllint
+        uses: karancode/yamllint-github-action@master
+        with:
+          yamllint_file_or_dir: .github/workflows/*.yml
+          yamllint_config_filepath: .yamllint
+          yamllint_strict: false
+          yamllint_comment: true
+        env:
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
