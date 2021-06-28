@@ -72,6 +72,13 @@ function platform_version() {
   fi | xargs
 }
 
+function console_msg() {
+    bold=$(tput bold)
+    normal=$(tput sgr0)
+    echo "${normal}---------${bold} $1 ${normal} ---------"
+}
+
+
 #
 # Install Steps
 #

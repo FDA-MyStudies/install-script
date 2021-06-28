@@ -23,6 +23,12 @@ function test_step_skipping() {
     "$(LABKEY_INSTALL_SKIP_INTRO_STEP=1 step_intro)"
 }
 
+function test_console_msg() {
+    assertEquals \
+    'tput sgr0 --------- tput bold Hello World! tput sgr0 ---------' \
+    console_msg("Hello World!")
+}
+
 oneTimeSetUp() {
   # shellcheck disable=SC1091
   source install-labkey.bash
