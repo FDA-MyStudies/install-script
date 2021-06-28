@@ -24,9 +24,10 @@ function test_step_skipping() {
 }
 
 function test_console_msg() {
-    assertEquals \
-    "tput sgr0 --------- tput bold Hello World! tput sgr0 ---------" \
-    "$(console_msg 'Hello World!')"
+    assertContains \
+    "Testing console_message function for Hello World!" \
+    "$(console_msg 'Hello World!')" \
+    "Hello World!"
 }
 
 oneTimeSetUp() {

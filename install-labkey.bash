@@ -72,12 +72,12 @@ function platform_version() {
   fi | xargs
 }
 
-function test_console_msg() {
-    assertContains \
-    "Testing console_message function for Hello World!" \
-    "$(console_msg 'Hello World!')"\
-    "Hello World!"
+function console_msg() {
+    bold=$(tput bold)
+    normal=$(tput sgr0)
+    echo "${normal}---------${bold} $1 ${normal} ---------"
 }
+
 
 #
 # Install Steps
