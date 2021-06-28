@@ -25,8 +25,8 @@ function test_step_skipping() {
 
 function test_console_msg() {
     assertEquals \
-    'tput sgr0 --------- tput bold Hello World! tput sgr0 ---------' \
-    console_msg("Hello World!")
+    "tput sgr0 --------- tput bold Hello World! tput sgr0 ---------" \
+    console_msg "Hello World!"
 }
 
 oneTimeSetUp() {
