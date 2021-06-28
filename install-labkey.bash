@@ -78,6 +78,20 @@ function console_msg() {
     echo "${normal}---------${bold} $1 ${normal} ---------"
 }
 
+function create_req_dir() {
+  echo "     checking to see if required directory $1 exists..."
+  if [ "$1" == "" ]; then
+    echo "     ERROR - you must supply a directory name"
+    else
+      if [ ! -d "$1" ]; then
+        echo "     creating $1"
+        mkdir -p "$1"
+        else
+          echo "       required directory $1 exists..."
+      fi
+  fi
+
+}
 
 #
 # Install Steps
@@ -103,6 +117,7 @@ function step_required_envs() {
   local ret=0
 
   for key in \
+    LABKEY_APP_HOME \
     LABKEY_FILES_ROOT \
     LABKEY_COMPANY_NAME \
     LABKEY_SYSTEM_DESCRIPTION \
@@ -117,6 +132,14 @@ function step_required_envs() {
   done
 
   return "$ret"
+}
+
+function step_create_required_paths() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+  # need path to place application.properties file
+  create_req_dir "${LABKEY_APP_HOME}"
+  create_req_dir "${TOMCAT_INSTALL_HOME}"
+
 }
 
 function step_download() {
@@ -146,6 +169,10 @@ function main() {
   step_intro
 
   step_required_envs
+
+  console_msg " Verifying required directories "
+  step_create_required_paths
+
   step_download
 
   step_outro
