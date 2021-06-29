@@ -24,6 +24,8 @@ function test_step_skipping() {
 }
 
 oneTimeSetUp() {
+  export LABKEY_INSTALL_SKIP_MAIN=1
+
   # shellcheck disable=SC1091
   source install-labkey.bash
 }

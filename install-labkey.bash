@@ -145,6 +145,6 @@ function main() {
 }
 
 # Main function called here
-if [ -z "${SHUNIT_VERSION:-}" ]; then
+if [ -z "$LABKEY_INSTALL_SKIP_MAIN" ]; then
   main
 fi
