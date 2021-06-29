@@ -19,7 +19,7 @@
 function test_create_required_paths() {
   assertTrue \
     "Create required paths failed to complete" \
-    "[ -d \"/tmp/labkey\"]"
+    '[ -d "/tmp/labkey"]'
 }
 
 oneTimeSetUp() {

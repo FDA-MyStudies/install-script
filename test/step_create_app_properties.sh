@@ -19,7 +19,7 @@
 function test_create_app_properties() {
   assertTrue \
     "Application Properties does not exist" \
-    "[ -r \"/tmp/labkey/application.properties\"]"
+    '[ -r "/tmp/labkey/application.properties"]'
 }
 
 oneTimeSetUp() {
