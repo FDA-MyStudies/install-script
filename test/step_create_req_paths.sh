@@ -17,7 +17,7 @@
 #
 
 function test_create_required_paths() {
-  assertTrue \
+  assertFalse \
     "Create required paths completed successfully" \
     "[ -d /tmp/labkey]"
 }
