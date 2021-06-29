@@ -18,8 +18,8 @@
 
 function test_create_app_properties() {
   assertTrue \
-    "Create required paths completed successfully" \
-    "[ -d /tmp/labkey]"
+    "Application Properties does not exist" \
+    "[ -r \"/tmp/labkey/application.properties\"]"
 }
 
 oneTimeSetUp() {

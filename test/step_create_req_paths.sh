@@ -17,9 +17,9 @@
 #
 
 function test_create_required_paths() {
-  assertFalse \
-    "Create required paths completed successfully" \
-    "[ -d /tmp/labkey]"
+  assertTrue \
+    "Create required paths failed to complete" \
+    "[ -d \"/tmp/labkey\"]"
 }
 
 oneTimeSetUp() {
