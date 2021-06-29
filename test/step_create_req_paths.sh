@@ -16,10 +16,12 @@
 # limitations under the License.
 #
 
-function test_create_required_paths() {
-  assertTrue \
-    "Create required paths failed to complete" \
-    '[ -d "/tmp/labkey"]'
+function test_create_labkey_home() {
+  assertTrue 'directory missing '$LABKEY_APP_HOME "[ -d '${LABKEY_APP_HOME}' ]"
+}
+
+function test_create_tomcat_install_home() {
+  assertTrue 'directory missing '$TOMCAT_INSTALL_HOME "[ -d '${TOMCAT_INSTALL_HOME}' ]"
 }
 
 oneTimeSetUp() {
@@ -27,10 +29,12 @@ oneTimeSetUp() {
   source sample_set_envs.sh
   source install-labkey.bash
   step_create_required_paths
+  #Disbale pipefail as ShUnit2 has a bug with AssertTrue & AssertFalse https://github.com/kward/shunit2/issues/141
+  set +euo pipefail
 }
 
 oneTimeTearDown() {
-  rm -Rf /tmp/labkey
+  rm -Rf "${LABKEY_APP_HOME}"
 }
 
 # shellcheck disable=SC1091

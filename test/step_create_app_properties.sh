@@ -18,8 +18,8 @@
 
 function test_create_app_properties() {
   assertTrue \
-    "Application Properties does not exist" \
-    '[ -r "/tmp/labkey/application.properties"]'
+    "file is missing  $LABKEY_APP_HOME/application.properties" \
+    "[ -f '${LABKEY_APP_HOME}/application.properties' ]"
 }
 
 oneTimeSetUp() {
@@ -28,10 +28,12 @@ oneTimeSetUp() {
   source install-labkey.bash
   step_create_required_paths
   step_create_app_properties
+  #Disbale pipefail as ShUnit2 has a bug with AssertTrue & AssertFalse https://github.com/kward/shunit2/issues/141
+  set +euo pipefail
 }
 
 oneTimeTearDown() {
-  rm -Rf /tmp/labkey
+  rm -Rf "${LABKEY_APP_HOME}"
 }
 
 # shellcheck disable=SC1091
