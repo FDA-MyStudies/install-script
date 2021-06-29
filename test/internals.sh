@@ -24,7 +24,7 @@ function test_step_skipping() {
 }
 
 function test_console_msg() {
-    assertContains \
+  assertContains \
     "Testing console_message function for Hello World!" \
     "$(console_msg 'Hello World!')" \
     "Hello World!"
