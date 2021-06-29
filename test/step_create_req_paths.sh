@@ -17,7 +17,9 @@
 #
 
 function test_create_labkey_home() {
-  assertTrue 'directory missing '$LABKEY_APP_HOME "[ -d '${LABKEY_APP_HOME}' ]"
+  assertTrue \
+  "directory missing $LABKEY_APP_HOME" \
+  "[ -d '${LABKEY_APP_HOME}' ]"
 }
 
 function test_create_tomcat_install_home() {
