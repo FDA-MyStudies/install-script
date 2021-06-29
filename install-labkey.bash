@@ -73,22 +73,22 @@ function platform_version() {
 }
 
 function console_msg() {
-    bold=$(tput bold)
-    normal=$(tput sgr0)
-    echo "${normal}---------${bold} $1 ${normal} ---------"
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+  echo "${normal}---------${bold} $1 ${normal} ---------"
 }
 
 function create_req_dir() {
   echo "     checking to see if required directory $1 exists..."
   if [ "$1" == "" ]; then
     echo "     ERROR - you must supply a directory name"
+  else
+    if [ ! -d "$1" ]; then
+      echo "     creating $1"
+      mkdir -p "$1"
     else
-      if [ ! -d "$1" ]; then
-        echo "     creating $1"
-        mkdir -p "$1"
-        else
-          echo "       required directory $1 exists..."
-      fi
+      echo "       required directory $1 exists..."
+    fi
   fi
 
 }
@@ -157,10 +157,10 @@ function step_create_app_properties() {
   # application properties depends on the ${LABKEY_APP_HOME} directory - error if no directory exists
   if [ ! -d "${LABKEY_APP_HOME}" ]; then
     console_msg "ERROR! - The ${LABKEY_APP_HOME} does not exist - I gotta put this file somewhere!"
-    else
-      NewFile="${LABKEY_APP_HOME}/application.properties"
-      (
-      /bin/cat <<- APP_PROPS_HERE
+  else
+    NewFile="${LABKEY_APP_HOME}/application.properties"
+    (
+      /bin/cat <<-APP_PROPS_HERE
 						# debug=true
 						# trace=true
 
@@ -314,7 +314,7 @@ function step_create_app_properties() {
 						server.tomcat.max-threads=50
 
 			APP_PROPS_HERE
-      ) > "$NewFile"
+    ) >"$NewFile"
   fi
 }
 
