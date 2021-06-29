@@ -23,7 +23,9 @@ function test_create_labkey_home() {
 }
 
 function test_create_tomcat_install_home() {
-  assertTrue 'directory missing '$TOMCAT_INSTALL_HOME "[ -d '${TOMCAT_INSTALL_HOME}' ]"
+  assertTrue \
+    "directory missing $TOMCAT_INSTALL_HOME" \
+    "[ -d '${TOMCAT_INSTALL_HOME}' ]"
 }
 
 oneTimeSetUp() {
