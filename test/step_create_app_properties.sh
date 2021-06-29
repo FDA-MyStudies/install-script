@@ -24,7 +24,7 @@ function test_create_app_properties() {
 
 oneTimeSetUp() {
   # shellcheck disable=SC1091
-  source sample_set_envs.sh
+  source test/unit_test_envs.bash
   source install-labkey.bash
   step_create_required_paths
   step_create_app_properties

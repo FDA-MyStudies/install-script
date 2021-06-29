@@ -30,7 +30,7 @@ function test_create_tomcat_install_home() {
 
 oneTimeSetUp() {
   # shellcheck disable=SC1091
-  source sample_set_envs.sh
+  source test/unit_test_envs.bash
   source install-labkey.bash
   step_create_required_paths
   #Disbale pipefail as ShUnit2 has a bug with AssertTrue & AssertFalse https://github.com/kward/shunit2/issues/141
