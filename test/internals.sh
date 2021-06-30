@@ -23,6 +23,13 @@ function test_step_skipping() {
     "$(LABKEY_INSTALL_SKIP_INTRO_STEP=1 step_intro)"
 }
 
+function test_console_msg() {
+  assertContains \
+    "Testing console_message function for Hello World!" \
+    "$(console_msg 'Hello World!')" \
+    "Hello World!"
+}
+
 oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
 
