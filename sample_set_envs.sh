@@ -3,7 +3,10 @@
 # Configure the env vars to use for the installer
 
 export LABKEY_COMPANY_NAME="LabKey"
-export LABKEY_SYSTEM_DESCRIPTION="labkey test deployment"
+export LABKEY_SYSTEM_DESCRIPTION="labkey demo deployment"
+export LABKEY_SYSTEM_EMAIL_ADDRESS="donotreply@labkey.com"
+export LABKEY_SYSTEM_SHORT_NAME="demo"
+export LABKEY_DEFAULT_DOMAIN="labkey.com"
 export LABKEY_BASE_SERVER_URL="http://localhost"
 export LABKEY_FILES_ROOT="/labkey/files"
 
@@ -13,7 +16,9 @@ export LABKEY_DISTRIBUTION="community"
 # tomcat properties
 
 export LABKEY_APP_HOME="/tmp/labkey"
+export LABKEY_INSTALL_HOME="$LABKEY_APP_HOME/labkey"
 export TOMCAT_INSTALL_HOME="$LABKEY_APP_HOME/apps/tomcat"
+export LABKEY_SRC_HOME="$LABKEY_APP_HOME/src/labkey"
 
 # tomcat properties used in application.properties
 export LOG_LEVEL_TOMCAT="OFF"
