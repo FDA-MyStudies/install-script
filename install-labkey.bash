@@ -138,6 +138,8 @@ function step_create_required_paths() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   # need path to place application.properties file
   create_req_dir "${LABKEY_APP_HOME}"
+  create_req_dir "${LABKEY_SRC_HOME}"
+  create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
 
 }
@@ -345,6 +347,39 @@ function step_create_app_properties() {
   fi
 }
 
+function step_startup_properties() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [ ! -d "$LABKEY_INSTALL_HOME" ]; then
+    console_msg " ERROR: LabKey Install Home directory does not exist! "
+    return 1
+  fi
+
+  if [ -d "$LABKEY_INSTALL_HOME" ]; then
+    if [ ! -d "$LABKEY_INSTALL_HOME/startup" ]; then
+      create_req_dir "$LABKEY_INSTALL_HOME/startup"
+    fi
+    # create startup properties file
+    NewFile="$LABKEY_INSTALL_HOME/startup/70_basic-startup.properties"
+    (
+      /bin/cat <<-STARTUP_PROPS_HERE
+				LookAndFeelSettings.companyName="${LABKEY_COMPANY_NAME}"
+				#LookAndFeelSettings.reportAProblemPath="https://www.labkey.org/hosted-support.url"
+				LookAndFeelSettings.systemDescription="${LABKEY_SYSTEM_DESCRIPTION}"
+				LookAndFeelSettings.systemEmailAddress="${LABKEY_SYSTEM_EMAIL_ADDRESS}"
+				LookAndFeelSettings.systemShortName="${LABKEY_SYSTEM_SHORT_NAME}"
+				SiteRootSettings.siteRootFile="${LABKEY_FILES_ROOT}"
+				SiteSettings.baseServerURL="${LABKEY_BASE_SERVER_URL}"
+				SiteSettings.defaultDomain="${LABKEY_DEFAULT_DOMAIN}"
+				SiteSettings.pipelineToolsDirectory="${LABKEY_INSTALL_HOME}"
+				SiteSettings.sslPort="${LABKEY_PORT}"
+				SiteSettings.sslRequired="true"
+
+				STARTUP_PROPS_HERE
+    ) >"$NewFile"
+  fi
+}
+
 function step_postgres_configure() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -476,6 +511,8 @@ function main() {
 
   console_msg " Creating LabKey Application Properties "
   step_create_app_properties
+  console_msg " Creating default LabKey Start-up Properties "
+  step_startup_properties
 
   step_postgres_configure
   step_download
