@@ -2,6 +2,7 @@
 
 # Configure the env vars to use for the installer
 
+export ADOPTOPENJDK_VERSION="adoptopenjdk-16-hotspot"
 export LABKEY_COMPANY_NAME="LabKey"
 export LABKEY_SYSTEM_DESCRIPTION="labkey test deployment"
 export LABKEY_BASE_SERVER_URL="http://localhost"
@@ -32,6 +33,7 @@ export POSTGRES_DB="labkey"
 export POSTGRES_USER="labkey"
 # shellcheck disable=SC2155
 export POSTGRES_PASSWORD="$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)"
+export POSTGRES_SVR_LOCAL="FALSE"
 
 # smtp properties
 export SMTP_HOST="localhost"

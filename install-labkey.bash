@@ -148,18 +148,58 @@ function step_os_prereqs() {
   case "_$(platform)" in
   _amzn)
     # amzn stuff goes here
-    #TODO Add req packages here
+    # Add adoptopenjdk repo
+    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+      (
+        /bin/cat <<-AMZN_JDK_HERE
+				[AdoptOpenJDK]
+				name=AdoptOpenJDK
+				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/amazonlinux/\$releasever/\$basearch
+				enabled=1
+				gpgcheck=1
+				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+			AMZN_JDK_HERE
+      ) >"$NewFile"
+    fi
+    sudo yum update -y
+    sudo yum install -y "$ADOPTOPENJDK_VERSION"
+
     ;;
 
   _centos)
     sudo yum update -y
     sudo yum install epel-release vim wget -y
-    sudo yum install tomcat-native apr fontconfig -y
+    # Add adoptopenjdk repo
+    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+      (
+        /bin/cat <<-AMZN_JDK_HERE
+				[AdoptOpenJDK]
+				name=AdoptOpenJDK
+				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/centos/\$releasever/\$basearch
+				enabled=1
+				gpgcheck=1
+				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+			AMZN_JDK_HERE
+      ) >"$NewFile"
+    fi
+    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+
     ;;
 
   _ubuntu)
     # ubuntu stuff here
-    #TODO Add req packages here
+    # Add adoptopenjdk repo
+    DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
+    if ! grep -q "$DEB_JDK_REPO" "/etc/apt/sources.list"; then
+      wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
+      sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+    fi
+
+    sudo apt-get update
+    sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
+
     ;;
 
   _*)
