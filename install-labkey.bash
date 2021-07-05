@@ -142,6 +142,33 @@ function step_create_required_paths() {
 
 }
 
+function step_os_prereqs() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  case "_$(platform)" in
+  _amzn)
+    # amzn stuff goes here
+    #TODO Add req packages here
+    ;;
+
+  _centos)
+    sudo yum update -y
+    sudo yum install epel-release vim wget -y
+    sudo yum install tomcat-native apr fontconfig -y
+    ;;
+
+  _ubuntu)
+    # ubuntu stuff here
+    #TODO Add req packages here
+    ;;
+
+  _*)
+    echo "can't install postgres on unrecognized platform: \"$(platform)\""
+    ;;
+  esac
+
+}
+
 function step_download() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -318,6 +345,110 @@ function step_create_app_properties() {
   fi
 }
 
+function step_postgres_configure() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  case "_$(platform)" in
+  _amzn)
+
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo amazon-linux-extras enable postgresql11 epel
+      #amazon-linux-extras install epel
+      sudo yum clean metadata
+      sudo yum update -y
+      sudo yum install epel-release postgresql.x86_64 postgresql-server.x86_64 -y
+      # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
+      sudo yum install tomcat-native.x86_64 apr fontconfig -y
+
+      if [ ! -f /var/lib/pgsql/data/PG_VERSION ]; then
+        /usr/bin/postgresql-setup --initdb
+      fi
+      sudo systemctl enable postgresql
+      sudo systemctl start postgresql
+      sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+      sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+      sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
+      sudo systemctl restart postgresql
+      console_msg "Postgres Server and Client Installed ..."
+    else
+      sudo amazon-linux-extras enable postgresql11 epel
+      #amazon-linux-extras install epel
+      sudo yum clean metadata
+      sudo yum install epel-release postgresql.x86_64 -y
+      # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
+      sudo yum install tomcat-native.x86_64 apr fontconfig -y
+      console_msg "Postgres Client Installed ..."
+    fi
+    ;;
+
+  _centos)
+    if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
+      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+      sudo yum clean metadata
+      sudo yum update -y
+    fi
+
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo yum install -y postgresql11-server
+
+      if [ ! -f /var/lib/pgsql/11/data/PG_VERSION ]; then
+        /usr/pgsql-11/bin/postgresql-11-setup initdb
+      fi
+      sudo systemctl enable postgresql-11
+      sudo systemctl start postgresql-11
+      sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+      sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+      sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/11/data/pg_hba.conf
+      sudo systemctl restart postgresql-11
+      console_msg "Postgres Server and Client Installed ..."
+    else
+      sudo yum install -y postgresql11
+      console_msg "Postgres Client Installed ..."
+    fi
+    ;;
+
+  _ubuntu)
+    # TODO add platform version for 20.04 only
+    # for version 11
+    # Create the file repository configuration:
+    # sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+    # Import the repository signing key:
+    # wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+    sudo apt-get update
+    # Postgresql 12 included in Ubuntu 20.04
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo apt-get -y install postgresql-12
+      # Not needed for conical postgresql package
+      #if [ ! -f /var/lib/postgresql/12/main/PG_VERSION ]; then
+      #  /usr/pgsql-11/bin/postgresql-11-setup initdb
+      #fi
+
+      sudo systemctl enable postgresql
+      sudo systemctl start postgresql
+      sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+      sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+      sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      # This may not be needed on ubuntu
+      #sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /etc/postgresql/12/main/pg_hba.conf
+      sudo systemctl restart postgresql
+      console_msg "Postgres Server and Client Installed ..."
+    else
+      sudo apt-get -y install postgresql-client-12
+      console_msg "Postgres Client Installed ..."
+    fi
+
+    ;;
+
+  _*)
+    echo "can't install postgres on unrecognized platform: \"$(platform)\""
+    ;;
+  esac
+
+}
+
 function step_outro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -336,7 +467,9 @@ function main() {
   step_intro
 
   step_required_envs
-
+  console_msg "Detected OS Platform is: $(platform) "
+  console_msg "Detected Platform Version is: $(platform_version) "
+  step_os_prereqs
   console_msg " Verifying required directories "
   step_create_required_paths
   console_msg " Finished verifying required directories "
@@ -344,12 +477,13 @@ function main() {
   console_msg " Creating LabKey Application Properties "
   step_create_app_properties
 
+  step_postgres_configure
   step_download
 
   step_outro
 }
 
 # Main function called here
-if [ -z "$LABKEY_INSTALL_SKIP_MAIN" ]; then
+if [ -z "${LABKEY_INSTALL_SKIP_MAIN:-}" ]; then
   main
 fi
