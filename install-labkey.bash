@@ -531,7 +531,7 @@ function step_tomcat_cert() {
   # Add Tomcat user
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
-    useradd -r -m -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
+    sudo useradd -r -m -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
     console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
   fi
 
@@ -539,9 +539,9 @@ function step_tomcat_cert() {
 
   # generate self-signed cert
   if [ ! -f "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" ]; then
-    /bin/keytool -genkeypair -dname "CN=$CERT_CN, OU=$CERT_OU, O=$CERT_O, L=$CERT_L, S=$CERT_ST, C=$CERT_C" -alias "$TOMCAT_KEYSTORE_ALIAS" -keyalg RSA -keysize 4096 -validity 720 -keystore "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" -storepass "$TOMCAT_KEYSTORE_PASSWORD" -keypass "$TOMCAT_KEYSTORE_PASSWORD" -ext SAN=dns:localhost,ip:127.0.0.1
-    /bin/keytool -exportcert -alias tomcat -file "$TOMCAT_INSTALL_HOME/SSL/tomcat.cer" -keystore "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" -storepass "$TOMCAT_KEYSTORE_PASSWORD"
-    console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at $TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME"
+    keytool -genkeypair -dname "CN=$CERT_CN, OU=$CERT_OU, O=$CERT_O, L=$CERT_L, S=$CERT_ST, C=$CERT_C" -alias "$TOMCAT_KEYSTORE_ALIAS" -keyalg RSA -keysize 4096 -validity 720 -keystore "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" -storepass "$TOMCAT_KEYSTORE_PASSWORD" -keypass "$TOMCAT_KEYSTORE_PASSWORD" -ext SAN=dns:localhost,ip:127.0.0.1
+    keytool -exportcert -alias tomcat -file "$TOMCAT_INSTALL_HOME/SSL/tomcat.cer" -keystore "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" -storepass "$TOMCAT_KEYSTORE_PASSWORD"
+    console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at ${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
   fi
 
 }
