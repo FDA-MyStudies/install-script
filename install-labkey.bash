@@ -141,6 +141,7 @@ function step_create_required_paths() {
   create_req_dir "${LABKEY_SRC_HOME}"
   create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
+  create_req_dir "${TOMCAT_INSTALL_HOME}/SSL"
 
 }
 
@@ -524,6 +525,100 @@ function step_postgres_configure() {
 
 }
 
+function step_tomcat_cert() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  # Add Tomcat user
+  if ! id "$TOMCAT_USERNAME" &>/dev/null; then
+    # add tomcat user
+    sudo useradd -r -m -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
+    console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
+  fi
+
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/SSL"
+
+  # generate self-signed cert
+  if [ ! -f "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" ]; then
+
+    keytool \
+      -genkeypair \
+      -dname "CN=${CERT_CN},OU=${CERT_OU},O=${CERT_O},L=${CERT_L},S=${CERT_ST},C=${CERT_C}" \
+      -alias "$TOMCAT_KEYSTORE_ALIAS" \
+      -keyalg RSA \
+      -keysize 4096 \
+      -validity 720 \
+      -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
+      -storepass "$TOMCAT_KEYSTORE_PASSWORD" \
+      -keypass "$TOMCAT_KEYSTORE_PASSWORD" \
+      -ext SAN=dns:localhost,ip:127.0.0.1
+
+    keytool \
+      -exportcert \
+      -alias tomcat \
+      -file "${TOMCAT_INSTALL_HOME}/SSL/tomcat.cer" \
+      -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
+      -storepass "$TOMCAT_KEYSTORE_PASSWORD"
+
+    console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at ${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+  fi
+
+}
+
+function step_tomcat_service() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  # Env Vars for tomcat_service file
+  JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
+  JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${LABKEY_APP_HOME}/tomcat-tmp -Djava.net.preferIPv4Stack=true"
+  LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
+  JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
+  JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
+  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=$TOMCAT_KEYSTORE_ALIAS"
+
+  # Add Tomcat service
+  if [ ! -f "/etc/systemd/system/tomcat_lk.service" ]; then
+
+    NewFile='/etc/systemd/system/tomcat_lk.service'
+    (
+      /bin/cat <<-HERE_TOMCAT_SERVICE
+				# Systemd unit file for tomcat_lk
+
+				[Unit]
+				Description=lk Apache Tomcat Application
+				After=syslog.target network.target
+
+				[Service]
+				Type=forking
+				Environment="JAVA_PRE_JAR_OPS=${JAVA_PRE_JAR_OPS}"
+				Environment="JAVA_MID_JAR_OPS=${JAVA_MID_JAR_OPS}"
+				Environment="LABKEY_JAR_OPS=${LABKEY_JAR_OPS}"
+				Environment="JAVA_LOG_JAR_OPS=${JAVA_LOG_JAR_OPS}"
+				Environment="JAVA_FLAGS_JAR_OPS=${JAVA_FLAGS_JAR_OPS}"
+				Environment="JAVA_POST_JAR_OPS=${JAVA_POST_JAR_OPS}"
+
+				ExecStart='/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS' "${LABKEY_INSTALL_HOME}/labkeyServer.jar $JAVA_POST_JAR_OPS"
+				SuccessExitStatus=0 143
+				Restart=on-failure
+				RestartSec=5
+
+				User="$TOMCAT_USERNAME"
+				Group="$TOMCAT_USERNAME"
+
+				[Install]
+				WantedBy=multi-user.target
+				HERE_TOMCAT_SERVICE
+    ) >$NewFile
+  fi
+
+}
+
+function step_start_labkey() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+  # Enables the tomcat service and starts labkey
+  sudo systemctl enable tomcat_lk.service
+  sudo systemctl start tomcat_lk.service
+}
+
 function step_outro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -551,11 +646,22 @@ function main() {
 
   console_msg " Creating LabKey Application Properties "
   step_create_app_properties
+
   console_msg " Creating default LabKey Start-up Properties "
   step_startup_properties
 
+  console_msg " Configuring Postgresql "
   step_postgres_configure
+
+  console_msg " Configuring Self Signed Certificate"
+  step_tomcat_cert
+
+  console_msg " Configuring Tomcat Service"
+  step_tomcat_service
+
   step_download
+
+  step_start_labkey
 
   step_outro
 }
