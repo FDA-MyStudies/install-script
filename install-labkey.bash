@@ -538,7 +538,7 @@ function step_tomcat_cert() {
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/SSL"
 
   # generate self-signed cert
-  if [ ! -f "$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME" ]; then
+  if [ ! -f "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" ]; then
 
     keytool \
       -genkeypair \
@@ -568,12 +568,14 @@ function step_tomcat_service() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   # Env Vars for tomcat_service file
+  # shellcheck disable=SC2046
+  JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
   JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
   JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${LABKEY_APP_HOME}/tomcat-tmp -Djava.net.preferIPv4Stack=true"
   LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
   JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
   JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
-  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=$TOMCAT_KEYSTORE_ALIAS"
+  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
 
   # Add Tomcat service
   if [ ! -f "/etc/systemd/system/tomcat_lk.service" ]; then
@@ -589,20 +591,23 @@ function step_tomcat_service() {
 
 				[Service]
 				Type=forking
+				Environment="CATALINA_HOME=${TOMCAT_INSTALL_HOME}"
+				Environment="JAVA_HOME=${JAVA_HOME}"
 				Environment="JAVA_PRE_JAR_OPS=${JAVA_PRE_JAR_OPS}"
 				Environment="JAVA_MID_JAR_OPS=${JAVA_MID_JAR_OPS}"
 				Environment="LABKEY_JAR_OPS=${LABKEY_JAR_OPS}"
 				Environment="JAVA_LOG_JAR_OPS=${JAVA_LOG_JAR_OPS}"
 				Environment="JAVA_FLAGS_JAR_OPS=${JAVA_FLAGS_JAR_OPS}"
 				Environment="JAVA_POST_JAR_OPS=${JAVA_POST_JAR_OPS}"
+				WorkingDirectory=${LABKEY_INSTALL_HOME}
 
-				ExecStart='/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS' "${LABKEY_INSTALL_HOME}/labkeyServer.jar $JAVA_POST_JAR_OPS"
+				ExecStart=\$JAVA_HOME/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS -jar ${LABKEY_INSTALL_HOME}/labkeyServer.jar $JAVA_POST_JAR_OPS"
 				SuccessExitStatus=0 143
 				Restart=on-failure
-				RestartSec=5
+				RestartSec=15
 
-				User="$TOMCAT_USERNAME"
-				Group="$TOMCAT_USERNAME"
+				User=$TOMCAT_USERNAME
+				Group=$TOMCAT_USERNAME
 
 				[Install]
 				WantedBy=multi-user.target
