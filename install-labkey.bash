@@ -554,7 +554,7 @@ function step_tomcat_cert() {
 
     keytool \
       -exportcert \
-      -alias tomcat \
+      -alias "$TOMCAT_KEYSTORE_ALIAS" \
       -file "${TOMCAT_INSTALL_HOME}/SSL/tomcat.cer" \
       -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
       -storepass "$TOMCAT_KEYSTORE_PASSWORD"
