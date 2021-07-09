@@ -18,8 +18,10 @@ export LABKEY_DISTRIBUTION="community"
 
 export LABKEY_APP_HOME="/tmp/labkey"
 export LABKEY_INSTALL_HOME="$LABKEY_APP_HOME/labkey"
-
 export LABKEY_SRC_HOME="$LABKEY_APP_HOME/src/labkey"
+export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.3.0/LabKey21.3.0-2-community.tar.gz"
+export LABKEY_DIST_FILENAME="LabKey21.3.0-2-community.tar.gz"
+export LABKEY_DIST_FILENAME_NO_TARGZ=${LABKEY_DIST_FILENAME::-7}
 
 # tomcat properties used in application.properties
 export LOG_LEVEL_TOMCAT="OFF"

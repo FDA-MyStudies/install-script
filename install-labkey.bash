@@ -214,11 +214,29 @@ function step_os_prereqs() {
 
 function step_download() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+  local ret=0
 
   # attempt to download all binaries
   #   fail if URLs incorrect/download fails
   #   fail if download succeeds but it 0 bytes
   # (option) verify checksums
+
+  # download labkey distribution
+  cd "$LABKEY_SRC_HOME" || exit
+  if [ ! -f "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ] || [ ! -s "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ]; then
+    wget -N "$LABKEY_DIST_URL"
+  fi
+
+  if [ -s "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ]; then
+    tar -xzf "$LABKEY_DIST_FILENAME"
+  else
+    # fail if download fails or dist file is 0 bytes
+    console_msg " ERROR: LabKey distribution file: ${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME} failed to download correctly! Exiting..."
+    export ret=1
+  fi
+
+  return "$ret"
+
 }
 
 function step_create_app_properties() {
