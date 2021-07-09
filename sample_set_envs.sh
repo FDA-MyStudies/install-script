@@ -66,3 +66,6 @@ export SMTP_STARTTLS="TRUE"
 
 export LABKEY_INSTALL_SKIP_STEP_START_LABKEY=1
 export LABKEY_PORT="8443"
+
+export ALT_FILE_ROOT_HEAD="/media/ebs_volume"
+export COOKIE_ALT_FILE_ROOT_HEAD=".ebs_volume"

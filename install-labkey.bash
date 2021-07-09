@@ -617,6 +617,19 @@ function step_tomcat_service() {
 
 }
 
+function step_alt_files_link() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  # adds symlink for alternate labkey files root
+  # e.g. adds symlink for /media/ebs_volume/files to /labkey/labkey/files
+  # Alt files volume must be mounted and formatted
+  if [ -f "${ALT_FILE_ROOT_HEAD}/${COOKIE_ALT_FILE_ROOT_HEAD}" ]; then
+    create_req_dir "${ALT_FILE_ROOT_HEAD}/files"
+    chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "${ALT_FILE_ROOT_HEAD}/files"
+    ln -s "${ALT_FILE_ROOT_HEAD}/files" "$LABKEY_INSTALL_HOME/files"
+  fi
+}
+
 function step_start_labkey() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   # Enables the tomcat service and starts labkey
@@ -660,6 +673,9 @@ function main() {
 
   console_msg " Configuring Self Signed Certificate"
   step_tomcat_cert
+
+  console_msg " Configuring Alt Files Root Link"
+  step_alt_files_link
 
   console_msg " Configuring Tomcat Service"
   step_tomcat_service
