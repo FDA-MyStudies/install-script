@@ -111,6 +111,82 @@ function step_intro() {
   '
 }
 
+function step_default_envs() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  # Provides default values for environment variables - override these values by passing in your own values via
+  # environment variables in the shell used to launch this script.
+
+  # Java env vars
+  ADOPTOPENJDK_VERSION="${ADOPTOPENJDK_VERSION:-adoptopenjdk-16-hotspot}"
+  JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-4G}"
+
+  # LabKey env vars
+  LABKEY_COMPANY_NAME="${LABKEY_COMPANY_NAME:-LabKey}"
+  LABKEY_SYSTEM_DESCRIPTION="${LABKEY_SYSTEM_DESCRIPTION:-labkey demo deployment}"
+  LABKEY_SYSTEM_EMAIL_ADDRESS="${LABKEY_SYSTEM_EMAIL_ADDRESS:-donotreply@labkey.com}"
+  LABKEY_SYSTEM_SHORT_NAME="${LABKEY_SYSTEM_SHORT_NAME:-demo}"
+  LABKEY_DEFAULT_DOMAIN="${LABKEY_DEFAULT_DOMAIN:-labkey.com}"
+  LABKEY_BASE_SERVER_URL="${LABKEY_BASE_SERVER_URL:-http://localhost}"
+  LABKEY_APP_HOME="${LABKEY_APP_HOME:-/labkey}"
+  LABKEY_INSTALL_HOME="${LABKEY_INSTALL_HOME:-$LABKEY_APP_HOME/labkey}"
+  LABKEY_SRC_HOME="${LABKEY_SRC_HOME:-$LABKEY_APP_HOME/src/labkey}"
+  LABKEY_FILES_ROOT="${LABKEY_FILES_ROOT:-${LABKEY_APP_HOME}/files}"
+  LABKEY_VERSION="${LABKEY_VERSION:-21.6.0}"
+  LABKEY_DISTRIBUTION="${LABKEY_DISTRIBUTION:-community}"
+  LABKEY_DIST_URL="${LABKEY_DIST_URL:-https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.3.0/LabKey21.3.0-2-community.tar.gz}"
+  LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.3.0-2-community.tar.gz}"
+  LABKEY_DIST_FILENAME_NO_TARGZ="${LABKEY_DIST_FILENAME_NO_TARGZ:-${LABKEY_DIST_FILENAME::-7}}"
+  LABKEY_PORT="${LABKEY_PORT:-8443}"
+  # Generate MEK and GUID if none is provided
+  LABKEY_MEK="${LABKEY_MEK:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
+  LABKEY_GUID="${LABKEY_GUID:-$(uuidgen)}"
+
+  # Tomcat env vars
+  TOMCAT_INSTALL_HOME="${TOMCAT_INSTALL_HOME:-$LABKEY_INSTALL_HOME}"
+  TOMCAT_TIMEZONE="${TOMCAT_TIMEZONE:-America/Los_Angeles}"
+  CATALINA_HOME="${CATALINA_HOME:-$TOMCAT_INSTALL_HOME}"
+  TOMCAT_USERNAME="${TOMCAT_USERNAME:-tomcat}"
+  TOMCAT_UID="${TOMCAT_UID:-3000}"
+  TOMCAT_KEYSTORE_FILENAME="${TOMCAT_KEYSTORE_FILENAME:-keystore.tomcat.p12}"
+  TOMCAT_KEYSTORE_ALIAS="${TOMCAT_KEYSTORE_ALIAS:-tomcat}"
+  # Generate password if none is provided
+  TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
+  CERT_C="${CERT_C:-US}"
+  CERT_ST="${CERT_ST:-Washington}"
+  CERT_L="${CERT_L:-Seattle}"
+  CERT_O="${CERT_O:-${LABKEY_COMPANY_NAME}}"
+  CERT_OU="${CERT_OU:-IT}"
+  CERT_CN="${CERT_CN:-localhost}"
+
+  # tomcat properties used in application.properties
+  LOG_LEVEL_TOMCAT="${LOG_LEVEL_TOMCAT:-OFF}"
+  LOG_LEVEL_SPRING_WEB="${LOG_LEVEL_SPRING_WEB:-OFF}"
+  LOG_LEVEL_SQL="${LOG_LEVEL_SQL:-OFF}"
+
+  # postgres env vars
+  POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
+  POSTGRES_DB="${POSTGRES_DB:-labkey}"
+  POSTGRES_USER="${POSTGRES_USER:-labkey}"
+  POSTGRES_SVR_LOCAL="${POSTGRES_SVR_LOCAL:-FALSE}"
+  # Generate password if none is provided
+  POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
+
+  # smtp env vars
+  SMTP_HOST="${SMTP_HOST:-localhost}"
+  SMTP_USER="${SMTP_USER:-}"
+  SMTP_PORT="${SMTP_PORT:-}"
+  SMTP_PASSWORD="${SMTP_PORT:-}"
+  SMTP_AUTH="${SMTP_AUTH:-}"
+  SMTP_FROM="${SMTP_FROM:-}"
+  SMTP_STARTTLS="${SMTP_STARTTLS:-TRUE}"
+
+  # ALT File Root env vars
+  ALT_FILE_ROOT_HEAD="${ALT_FILE_ROOT_HEAD:-/media/ebs_volume}"
+  COOKIE_ALT_FILE_ROOT_HEAD="${COOKIE_ALT_FILE_ROOT_HEAD:-.ebs_volume}"
+
+}
+
 function step_required_envs() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -419,7 +495,7 @@ function step_startup_properties() {
       create_req_dir "$LABKEY_INSTALL_HOME/startup"
     fi
     # create startup properties file
-    NewFile="$LABKEY_INSTALL_HOME/startup/70_basic-startup.properties"
+    NewFile="$LABKEY_INSTALL_HOME/startup/50_basic-startup.properties"
     (
       /bin/cat <<-STARTUP_PROPS_HERE
 				LookAndFeelSettings.companyName="${LABKEY_COMPANY_NAME}"
@@ -549,7 +625,7 @@ function step_tomcat_cert() {
   # Add Tomcat user
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
-    sudo useradd -r -m -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
+    sudo useradd -r -M -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
     console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
   fi
 
@@ -672,10 +748,16 @@ function main() {
 
   step_intro
 
+  console_msg " Configuring default variables"
+  step_default_envs
+
   step_required_envs
   console_msg "Detected OS Platform is: $(platform) "
   console_msg "Detected Platform Version is: $(platform_version) "
+
+  console_msg " Applying OS pre-reqs "
   step_os_prereqs
+
   console_msg " Verifying required directories "
   step_create_required_paths
   console_msg " Finished verifying required directories "
@@ -698,6 +780,7 @@ function main() {
   console_msg " Configuring Tomcat Service"
   step_tomcat_service
 
+  console_msg " Downloading LabKey "
   step_download
 
   step_start_labkey
