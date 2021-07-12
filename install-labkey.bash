@@ -625,7 +625,7 @@ function step_tomcat_cert() {
   # Add Tomcat user
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
-    sudo useradd -r -m -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
+    sudo useradd -r -M -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
     console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
   fi
 
