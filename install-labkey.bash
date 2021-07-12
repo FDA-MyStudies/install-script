@@ -495,7 +495,7 @@ function step_startup_properties() {
       create_req_dir "$LABKEY_INSTALL_HOME/startup"
     fi
     # create startup properties file
-    NewFile="$LABKEY_INSTALL_HOME/startup/70_basic-startup.properties"
+    NewFile="$LABKEY_INSTALL_HOME/startup/50_basic-startup.properties"
     (
       /bin/cat <<-STARTUP_PROPS_HERE
 				LookAndFeelSettings.companyName="${LABKEY_COMPANY_NAME}"
