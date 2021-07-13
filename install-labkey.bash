@@ -150,6 +150,7 @@ function step_default_envs() {
   TOMCAT_UID="${TOMCAT_UID:-3000}"
   TOMCAT_KEYSTORE_FILENAME="${TOMCAT_KEYSTORE_FILENAME:-keystore.tomcat.p12}"
   TOMCAT_KEYSTORE_ALIAS="${TOMCAT_KEYSTORE_ALIAS:-tomcat}"
+  TOMCAT_KEYSTORE_FORMAT="${TOMCAT_KEYSTORE_FORMAT:-PKCS12}"
   # Generate password if none is provided
   TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   CERT_C="${CERT_C:-US}"
@@ -169,6 +170,8 @@ function step_default_envs() {
   POSTGRES_DB="${POSTGRES_DB:-labkey}"
   POSTGRES_USER="${POSTGRES_USER:-labkey}"
   POSTGRES_SVR_LOCAL="${POSTGRES_SVR_LOCAL:-FALSE}"
+  POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+  POSTGRES_PARAMETERS="${POSTGRES_PARAMETERS:-}"
   # Generate password if none is provided
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
 
@@ -218,6 +221,16 @@ function step_create_required_paths() {
   create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}/SSL"
+  create_req_dir "${LABKEY_APP_HOME}/tomcat-tmp"
+  # directories needed for embedded tomcat builds
+  create_req_dir "${LABKEY_INSTALL_HOME}/logs"
+  create_req_dir "${LABKEY_INSTALL_HOME}/config"
+  create_req_dir "${LABKEY_INSTALL_HOME}/externalModules"
+  create_req_dir "${LABKEY_INSTALL_HOME}/server/startup"
+  # not sure if these are needed
+  create_req_dir "${TOMCAT_INSTALL_HOME}/lib"
+  create_req_dir "/work/Tomcat/localhost/ROOT"
+  create_req_dir "/work/Tomcat/localhost/_"
 
 }
 
@@ -318,19 +331,19 @@ function step_download() {
 function step_create_app_properties() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  # application properties depends on the ${LABKEY_APP_HOME} directory - error if no directory exists
-  if [ ! -d "${LABKEY_APP_HOME}" ]; then
-    console_msg "ERROR! - The ${LABKEY_APP_HOME} does not exist - I gotta put this file somewhere!"
+  # application properties depends on the ${LABKEY_INSTALL_HOME} directory - error if no directory exists
+  if [ ! -d "${LABKEY_INSTALL_HOME}" ]; then
+    console_msg "ERROR! - The ${LABKEY_INSTALL_HOME} does not exist - I gotta put this file somewhere!"
   else
-    NewFile="${LABKEY_APP_HOME}/application.properties"
+    NewFile="${LABKEY_INSTALL_HOME}/application.properties"
     (
       /bin/cat <<-APP_PROPS_HERE
 						# debug=true
 						# trace=true
 
-						server.tomcat.basedir=${TOMCAT_BASE_DIR:-/}
+						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
 
-						server.port=${LABKEY_PORT:-8443}
+						server.port=${LABKEY_PORT}
 
 						spring.main.log-startup-info=true
 
@@ -346,13 +359,13 @@ function step_create_app_properties() {
 
 						# custom tomcat group
 						logging.group.tomcat=org.apache.catalina,org.apache.coyote,org.apache.tomcat
-						logging.level.tomcat=${LOG_LEVEL_TOMCAT:-OFF}
+						logging.level.tomcat=${LOG_LEVEL_TOMCAT}
 
 						logging.level.org.apache.coyote.http2=OFF
 
 						# default groups
-						logging.level.web=${LOG_LEVEL_SPRING_WEB:-OFF}
-						logging.level.sql=${LOG_LEVEL_SQL:-OFF}
+						logging.level.web=${LOG_LEVEL_SPRING_WEB}
+						logging.level.sql=${LOG_LEVEL_SQL}
 
 						logging.level.net.sf.ehcache=ERROR
 
@@ -403,9 +416,9 @@ function step_create_app_properties() {
 
 						context.dataSourceName[0]=jdbc/labkeyDataSource
 						context.driverClassName[0]=org.postgresql.Driver
-						context.url[0]=jdbc:postgresql://${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-${POSTGRES_USER}}${POSTGRES_PARAMETERS:-}
-						context.username[0]=${POSTGRES_USER:-postgres}
-						context.password[0]=${POSTGRES_PASSWORD:-}
+						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB:-${POSTGRES_USER}}${POSTGRES_PARAMETERS}
+						context.username[0]=${POSTGRES_USER}
+						context.password[0]=${POSTGRES_PASSWORD}
 
 						# context.dataSourceName[1]=jdbc/@@extraJdbcDataSource@@
 						# context.driverClassName[1]=@@extraJdbcDriverClassName@@
@@ -438,10 +451,10 @@ function step_create_app_properties() {
 
 
 						# must match values in entrypoint.sh
-						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS:-tomcat}
-						server.ssl.key-store=${LABKEY_APP_HOME}/${TOMCAT_KEYSTORE_FILENAME:-labkey.p12}
+						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
+						server.ssl.key-store=${LABKEY_APP_HOME}/${TOMCAT_KEYSTORE_FILENAME}
 						# server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
-						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT:-PKCS12}
+						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT}
 
 						context.masterEncryptionKey=${LABKEY_MEK}
 						context.serverGUID=${LABKEY_GUID}
@@ -653,6 +666,9 @@ function step_tomcat_cert() {
       -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
       -storepass "$TOMCAT_KEYSTORE_PASSWORD"
 
+    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+    chmod 440 "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+
     console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at ${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
   fi
 
@@ -669,7 +685,7 @@ function step_tomcat_service() {
   LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
   JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
   JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
-  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}"
 
   # Add Tomcat service
   if [ ! -f "/etc/systemd/system/tomcat_lk.service" ]; then
@@ -684,7 +700,7 @@ function step_tomcat_service() {
 				After=syslog.target network.target
 
 				[Service]
-				Type=forking
+				Type=simple
 				Environment="CATALINA_HOME=${TOMCAT_INSTALL_HOME}"
 				Environment="JAVA_HOME=${JAVA_HOME}"
 				Environment="JAVA_PRE_JAR_OPS=${JAVA_PRE_JAR_OPS}"
@@ -762,6 +778,9 @@ function main() {
   step_create_required_paths
   console_msg " Finished verifying required directories "
 
+  console_msg " Downloading LabKey "
+  step_download
+
   console_msg " Creating LabKey Application Properties "
   step_create_app_properties
 
@@ -774,14 +793,13 @@ function main() {
   console_msg " Configuring Self Signed Certificate"
   step_tomcat_cert
 
-  console_msg " Configuring Alt Files Root Link"
-  step_alt_files_link
-
   console_msg " Configuring Tomcat Service"
   step_tomcat_service
 
-  console_msg " Downloading LabKey "
-  step_download
+  console_msg " Configuring Alt Files Root Link"
+  step_alt_files_link
+
+
 
   step_start_labkey
 
