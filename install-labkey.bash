@@ -632,15 +632,20 @@ function step_postgres_configure() {
 
 }
 
-function step_tomcat_cert() {
+function step_tomcat_user() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  # Add Tomcat user
+    # Add Tomcat user
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
     sudo useradd -r -M -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
     console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
   fi
+
+}
+
+function step_tomcat_cert() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/SSL"
 
@@ -790,6 +795,9 @@ function main() {
   console_msg " Configuring Postgresql "
   step_postgres_configure
 
+  console_msg " Configuring Tomcat user"
+  step_tomcat_user
+  
   console_msg " Configuring Self Signed Certificate"
   step_tomcat_cert
 
