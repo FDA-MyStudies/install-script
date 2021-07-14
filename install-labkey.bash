@@ -23,6 +23,12 @@ fi
 # bash strict mode
 set -euo pipefail
 
+# must be root or launch script with sudo
+if [[ $(whoami) != root ]]; then
+  echo Please run this script as root or using sudo
+  exit
+fi
+
 #
 # "Global" variables
 #
@@ -131,12 +137,12 @@ function step_default_envs() {
   LABKEY_APP_HOME="${LABKEY_APP_HOME:-/labkey}"
   LABKEY_INSTALL_HOME="${LABKEY_INSTALL_HOME:-$LABKEY_APP_HOME/labkey}"
   LABKEY_SRC_HOME="${LABKEY_SRC_HOME:-$LABKEY_APP_HOME/src/labkey}"
-  LABKEY_FILES_ROOT="${LABKEY_FILES_ROOT:-${LABKEY_APP_HOME}/files}"
+  LABKEY_FILES_ROOT="${LABKEY_FILES_ROOT:-${LABKEY_INSTALL_HOME}/files}"
   LABKEY_VERSION="${LABKEY_VERSION:-21.6.0}"
   LABKEY_DISTRIBUTION="${LABKEY_DISTRIBUTION:-community}"
   LABKEY_DIST_URL="${LABKEY_DIST_URL:-https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.3.0/LabKey21.3.0-2-community.tar.gz}"
   LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.3.0-2-community.tar.gz}"
-  LABKEY_DIST_FILENAME_NO_TARGZ="${LABKEY_DIST_FILENAME_NO_TARGZ:-${LABKEY_DIST_FILENAME::-7}}"
+  LABKEY_DIST_DIR="${LABKEY_DIST_DIR:-${LABKEY_DIST_FILENAME::-16}}"
   LABKEY_PORT="${LABKEY_PORT:-8443}"
   # Generate MEK and GUID if none is provided
   LABKEY_MEK="${LABKEY_MEK:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
@@ -148,6 +154,7 @@ function step_default_envs() {
   CATALINA_HOME="${CATALINA_HOME:-$TOMCAT_INSTALL_HOME}"
   TOMCAT_USERNAME="${TOMCAT_USERNAME:-tomcat}"
   TOMCAT_UID="${TOMCAT_UID:-3000}"
+  TOMCAT_KEYSTORE_BASE_PATH="${TOMCAT_KEYSTORE_BASE_PATH:-$TOMCAT_INSTALL_HOME/SSL}"
   TOMCAT_KEYSTORE_FILENAME="${TOMCAT_KEYSTORE_FILENAME:-keystore.tomcat.p12}"
   TOMCAT_KEYSTORE_ALIAS="${TOMCAT_KEYSTORE_ALIAS:-tomcat}"
   TOMCAT_KEYSTORE_FORMAT="${TOMCAT_KEYSTORE_FORMAT:-PKCS12}"
@@ -220,14 +227,14 @@ function step_create_required_paths() {
   create_req_dir "${LABKEY_SRC_HOME}"
   create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
-  create_req_dir "${TOMCAT_INSTALL_HOME}/SSL"
+  create_req_dir "${TOMCAT_KEYSTORE_BASE_PATH}"
   create_req_dir "${LABKEY_APP_HOME}/tomcat-tmp"
   # directories needed for embedded tomcat builds
   create_req_dir "${LABKEY_INSTALL_HOME}/logs"
   create_req_dir "${LABKEY_INSTALL_HOME}/config"
   create_req_dir "${LABKEY_INSTALL_HOME}/externalModules"
   create_req_dir "${LABKEY_INSTALL_HOME}/server/startup"
-  # not sure if these are needed
+  # TODO not sure if these are needed
   create_req_dir "${TOMCAT_INSTALL_HOME}/lib"
   create_req_dir "/work/Tomcat/localhost/ROOT"
   create_req_dir "/work/Tomcat/localhost/_"
@@ -452,8 +459,8 @@ function step_create_app_properties() {
 
 						# must match values in entrypoint.sh
 						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
-						server.ssl.key-store=${LABKEY_APP_HOME}/${TOMCAT_KEYSTORE_FILENAME}
-						# server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
+						server.ssl.key-store=${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}
+						server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
 						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT}
 
 						context.masterEncryptionKey=${LABKEY_MEK}
@@ -504,24 +511,24 @@ function step_startup_properties() {
   fi
 
   if [ -d "$LABKEY_INSTALL_HOME" ]; then
-    if [ ! -d "$LABKEY_INSTALL_HOME/startup" ]; then
-      create_req_dir "$LABKEY_INSTALL_HOME/startup"
+    if [ ! -d "$LABKEY_INSTALL_HOME/server/startup" ]; then
+      create_req_dir "$LABKEY_INSTALL_HOME/server/startup"
     fi
     # create startup properties file
-    NewFile="$LABKEY_INSTALL_HOME/startup/50_basic-startup.properties"
+    NewFile="$LABKEY_INSTALL_HOME/server/startup/50_basic-startup.properties"
     (
       /bin/cat <<-STARTUP_PROPS_HERE
-				LookAndFeelSettings.companyName="${LABKEY_COMPANY_NAME}"
-				#LookAndFeelSettings.reportAProblemPath="https://www.labkey.org/hosted-support.url"
-				LookAndFeelSettings.systemDescription="${LABKEY_SYSTEM_DESCRIPTION}"
-				LookAndFeelSettings.systemEmailAddress="${LABKEY_SYSTEM_EMAIL_ADDRESS}"
-				LookAndFeelSettings.systemShortName="${LABKEY_SYSTEM_SHORT_NAME}"
-				SiteRootSettings.siteRootFile="${LABKEY_FILES_ROOT}"
-				SiteSettings.baseServerURL="${LABKEY_BASE_SERVER_URL}"
-				SiteSettings.defaultDomain="${LABKEY_DEFAULT_DOMAIN}"
-				SiteSettings.pipelineToolsDirectory="${LABKEY_INSTALL_HOME}"
-				SiteSettings.sslPort="${LABKEY_PORT}"
-				SiteSettings.sslRequired="true"
+				LookAndFeelSettings.companyName=${LABKEY_COMPANY_NAME}
+				#LookAndFeelSettings.reportAProblemPath=https://www.labkey.org/hosted-support.url
+				LookAndFeelSettings.systemDescription=${LABKEY_SYSTEM_DESCRIPTION}
+				LookAndFeelSettings.systemEmailAddress=${LABKEY_SYSTEM_EMAIL_ADDRESS}
+				LookAndFeelSettings.systemShortName=${LABKEY_SYSTEM_SHORT_NAME}
+				SiteRootSettings.siteRootFile=${LABKEY_FILES_ROOT}
+				SiteSettings.baseServerURL=${LABKEY_BASE_SERVER_URL}
+				SiteSettings.defaultDomain=${LABKEY_DEFAULT_DOMAIN}
+				SiteSettings.pipelineToolsDirectory=${LABKEY_INSTALL_HOME}
+				SiteSettings.sslPort=${LABKEY_PORT}
+				SiteSettings.sslRequired=true
 
 				STARTUP_PROPS_HERE
     ) >"$NewFile"
@@ -635,7 +642,7 @@ function step_postgres_configure() {
 function step_tomcat_user() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-    # Add Tomcat user
+  # Add Tomcat user
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
     sudo useradd -r -M -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
@@ -650,7 +657,7 @@ function step_tomcat_cert() {
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/SSL"
 
   # generate self-signed cert
-  if [ ! -f "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" ]; then
+  if [ ! -f "${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}" ]; then
 
     keytool \
       -genkeypair \
@@ -659,7 +666,7 @@ function step_tomcat_cert() {
       -keyalg RSA \
       -keysize 4096 \
       -validity 720 \
-      -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
+      -keystore "${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}" \
       -storepass "$TOMCAT_KEYSTORE_PASSWORD" \
       -keypass "$TOMCAT_KEYSTORE_PASSWORD" \
       -ext SAN=dns:localhost,ip:127.0.0.1
@@ -667,15 +674,51 @@ function step_tomcat_cert() {
     keytool \
       -exportcert \
       -alias "$TOMCAT_KEYSTORE_ALIAS" \
-      -file "${TOMCAT_INSTALL_HOME}/SSL/tomcat.cer" \
-      -keystore "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}" \
+      -file "${TOMCAT_KEYSTORE_BASE_PATH}/tomcat.cer" \
+      -keystore "${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}" \
       -storepass "$TOMCAT_KEYSTORE_PASSWORD"
 
-    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
-    chmod 440 "${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}"
+    chmod 440 "${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}"
 
-    console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at ${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME}"
+    console_msg "A Self signed SSL certificate has been created and stored in the keystoreFile at ${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}"
   fi
+
+}
+
+function step_configure_labkey() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+  local ret=0
+
+  # configure labkey to run
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_APP_HOME}"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_SRC_HOME}"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_INSTALL_HOME}"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}"
+
+  # TODO not sure if this is needed
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "/work/Tomcat/"
+
+  # strip -embedded from filename to get expected directory name
+
+  if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}" ]; then
+    # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
+    if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
+      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
+      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+    else
+      console_msg " ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution. "
+      export ret=1
+    fi
+    # copy bin directory from distribution
+    if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" ]; then
+      cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
+    fi
+  else
+    console_msg " ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars. "
+    console_msg " Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
+  fi
+  return "$ret"
 
 }
 
@@ -690,7 +733,6 @@ function step_tomcat_service() {
   LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
   JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
   JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
-  JAVA_POST_JAR_OPS="--server.ssl.key-store-password=$TOMCAT_KEYSTORE_PASSWORD --server.ssl.key-store=${TOMCAT_INSTALL_HOME}/SSL/${TOMCAT_KEYSTORE_FILENAME} --server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}"
 
   # Add Tomcat service
   if [ ! -f "/etc/systemd/system/tomcat_lk.service" ]; then
@@ -713,10 +755,9 @@ function step_tomcat_service() {
 				Environment="LABKEY_JAR_OPS=${LABKEY_JAR_OPS}"
 				Environment="JAVA_LOG_JAR_OPS=${JAVA_LOG_JAR_OPS}"
 				Environment="JAVA_FLAGS_JAR_OPS=${JAVA_FLAGS_JAR_OPS}"
-				Environment="JAVA_POST_JAR_OPS=${JAVA_POST_JAR_OPS}"
 				WorkingDirectory=${LABKEY_INSTALL_HOME}
 
-				ExecStart=\$JAVA_HOME/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS -jar ${LABKEY_INSTALL_HOME}/labkeyServer.jar $JAVA_POST_JAR_OPS"
+				ExecStart=$JAVA_HOME/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS -jar ${LABKEY_INSTALL_HOME}/labkeyServer.jar
 				SuccessExitStatus=0 143
 				Restart=on-failure
 				RestartSec=15
@@ -742,6 +783,12 @@ function step_alt_files_link() {
     create_req_dir "${ALT_FILE_ROOT_HEAD}/files"
     chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "${ALT_FILE_ROOT_HEAD}/files"
     ln -s "${ALT_FILE_ROOT_HEAD}/files" "$LABKEY_INSTALL_HOME/files"
+  else
+    # create default files root
+    if [ ! -d "$LABKEY_INSTALL_HOME/files" ]; then
+      create_req_dir "$LABKEY_INSTALL_HOME/files"
+      chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "$LABKEY_INSTALL_HOME/files"
+    fi
   fi
 }
 
@@ -797,17 +844,18 @@ function main() {
 
   console_msg " Configuring Tomcat user"
   step_tomcat_user
-  
+
   console_msg " Configuring Self Signed Certificate"
   step_tomcat_cert
+
+  console_msg "Configuring LabKey "
+  step_configure_labkey
 
   console_msg " Configuring Tomcat Service"
   step_tomcat_service
 
   console_msg " Configuring Alt Files Root Link"
   step_alt_files_link
-
-
 
   step_start_labkey
 
