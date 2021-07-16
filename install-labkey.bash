@@ -138,10 +138,10 @@ function step_default_envs() {
   LABKEY_INSTALL_HOME="${LABKEY_INSTALL_HOME:-$LABKEY_APP_HOME/labkey}"
   LABKEY_SRC_HOME="${LABKEY_SRC_HOME:-$LABKEY_APP_HOME/src/labkey}"
   LABKEY_FILES_ROOT="${LABKEY_FILES_ROOT:-${LABKEY_INSTALL_HOME}/files}"
-  LABKEY_VERSION="${LABKEY_VERSION:-21.6.0}"
+  LABKEY_VERSION="${LABKEY_VERSION:-21.7.0}"
   LABKEY_DISTRIBUTION="${LABKEY_DISTRIBUTION:-community}"
-  LABKEY_DIST_URL="${LABKEY_DIST_URL:-https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.3.0/LabKey21.3.0-2-community.tar.gz}"
-  LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.3.0-2-community.tar.gz}"
+  LABKEY_DIST_URL="${LABKEY_DIST_URL:-https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.7.0/LabKey21.7.0-2-community-embedded.tar.gz}"
+  LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.7.0-2-community-embedded.tar.gz}"
   LABKEY_DIST_DIR="${LABKEY_DIST_DIR:-${LABKEY_DIST_FILENAME::-16}}"
   LABKEY_PORT="${LABKEY_PORT:-8443}"
   # Generate MEK and GUID if none is provided
