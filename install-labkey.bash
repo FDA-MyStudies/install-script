@@ -301,7 +301,7 @@ function step_os_prereqs() {
     ;;
 
   _*)
-    echo "can't install postgres on unrecognized platform: \"$(platform)\""
+    echo "can't install adoptopenjdk on unrecognized platform: \"$(platform)\""
     ;;
   esac
 
