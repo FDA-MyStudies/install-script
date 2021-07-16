@@ -243,6 +243,16 @@ function step_create_required_paths() {
 function step_os_prereqs() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
+  if ! command -v systemctl 2>&1 >/dev/null; then
+    echo '
+
+      "systemctl" required but not detected!
+
+      This script has not been tested on systems without System D.
+
+    '
+  fi
+
   case "_$(platform)" in
   _amzn)
     # amzn stuff goes here
