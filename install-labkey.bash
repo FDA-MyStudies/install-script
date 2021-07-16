@@ -328,7 +328,7 @@ function step_download() {
 
   # download labkey distribution
   cd "$LABKEY_SRC_HOME" || exit
-  if [ ! -f "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ] || [ ! -s "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ]; then
+  if [ ! -s "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ]; then
     wget -N "$LABKEY_DIST_URL"
   fi
 
