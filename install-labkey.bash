@@ -81,7 +81,7 @@ function platform_version() {
 function console_msg() {
   bold=$(tput bold)
   normal=$(tput sgr0)
-  echo "${normal}---------${bold} $1 ${normal} ---------"
+  echo "${normal}---------${bold} $1 ${normal}---------"
 }
 
 function create_req_dir() {
@@ -105,7 +105,7 @@ function create_req_dir() {
 function step_intro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  printf '%s\n\n%s' \
+  printf '%s\n\n%s\n\n' \
     "
     ${PRODUCT} CLI Install Script
   " \
@@ -113,8 +113,7 @@ function step_intro() {
      __
      ||  |  _ |_ |/ _
     (__) |_(_||_)|\(/_\/
-                      /
-  '
+                      /'
 }
 
 function step_default_envs() {
@@ -327,7 +326,7 @@ function step_download() {
     tar -xzf "$LABKEY_DIST_FILENAME"
   else
     # fail if download fails or dist file is 0 bytes
-    console_msg " ERROR: LabKey distribution file: ${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME} failed to download correctly! Exiting..."
+    console_msg "ERROR: LabKey distribution file: ${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME} failed to download correctly! Exiting..."
     export ret=1
   fi
 
@@ -506,7 +505,7 @@ function step_startup_properties() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   if [ ! -d "$LABKEY_INSTALL_HOME" ]; then
-    console_msg " ERROR: LabKey Install Home directory does not exist! "
+    console_msg "ERROR: LabKey Install Home directory does not exist!"
     return 1
   fi
 
@@ -646,7 +645,7 @@ function step_tomcat_user() {
   if ! id "$TOMCAT_USERNAME" &>/dev/null; then
     # add tomcat user
     sudo useradd -r -M -u "$TOMCAT_UID" -U -s '/bin/false' "$TOMCAT_USERNAME"
-    console_msg " a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID "
+    console_msg "a tomcat service account user has been added as $TOMCAT_USERNAME  with UID: $TOMCAT_UID"
   fi
 
 }
@@ -707,7 +706,7 @@ function step_configure_labkey() {
       cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
       cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
     else
-      console_msg " ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution. "
+      console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
       export ret=1
     fi
     # copy bin directory from distribution
@@ -715,8 +714,8 @@ function step_configure_labkey() {
       cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
     fi
   else
-    console_msg " ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars. "
-    console_msg " Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
+    console_msg "ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars."
+    console_msg "Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
   fi
   return "$ret"
 
@@ -816,45 +815,45 @@ function main() {
 
   step_intro
 
-  console_msg " Configuring default variables"
+  console_msg "Configuring default variables"
   step_default_envs
 
   step_required_envs
-  console_msg "Detected OS Platform is: $(platform) "
-  console_msg "Detected Platform Version is: $(platform_version) "
+  console_msg "Detected OS Platform is: $(platform)"
+  console_msg "Detected Platform Version is: $(platform_version)"
 
-  console_msg " Applying OS pre-reqs "
+  console_msg "Applying OS pre-reqs"
   step_os_prereqs
 
-  console_msg " Verifying required directories "
+  console_msg "Verifying required directories"
   step_create_required_paths
-  console_msg " Finished verifying required directories "
+  console_msg "Finished verifying required directories"
 
-  console_msg " Downloading LabKey "
+  console_msg "Downloading LabKey"
   step_download
 
-  console_msg " Creating LabKey Application Properties "
+  console_msg "Creating LabKey Application Properties"
   step_create_app_properties
 
-  console_msg " Creating default LabKey Start-up Properties "
+  console_msg "Creating default LabKey Start-up Properties"
   step_startup_properties
 
-  console_msg " Configuring Postgresql "
+  console_msg "Configuring Postgresql"
   step_postgres_configure
 
-  console_msg " Configuring Tomcat user"
+  console_msg "Configuring Tomcat user"
   step_tomcat_user
 
-  console_msg " Configuring Self Signed Certificate"
+  console_msg "Configuring Self Signed Certificate"
   step_tomcat_cert
 
-  console_msg "Configuring LabKey "
+  console_msg "Configuring LabKey"
   step_configure_labkey
 
-  console_msg " Configuring Tomcat Service"
+  console_msg "Configuring Tomcat Service"
   step_tomcat_service
 
-  console_msg " Configuring Alt Files Root Link"
+  console_msg "Configuring Alt Files Root Link"
   step_alt_files_link
 
   step_start_labkey
