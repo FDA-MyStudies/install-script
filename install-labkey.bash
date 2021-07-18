@@ -368,9 +368,6 @@ function step_create_app_properties() {
 						spring.application.name=labkey
 						server.servlet.application-display-name=labkey
 
-						# logging.pattern.console=
-						logging.pattern.console=%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} E %clr(%-5.5p) %clr(%5.5replace(%p){'.+', ${PID:-}}){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(${LOGGER_PATTERN:-%-40.40logger{39}}){cyan} %clr(:){faint} %m%n%wEx
-
 						logging.level.root=WARN
 
 						# custom tomcat group
@@ -384,32 +381,6 @@ function step_create_app_properties() {
 						logging.level.sql=${LOG_LEVEL_SQL}
 
 						logging.level.net.sf.ehcache=ERROR
-
-						# logging.level.org.apache=TRACE
-						# logging.level.org.apache.catalina.core.Catalina=TRACE
-						logging.level.org.apache.catalina.core.ContainerBase.[Tomcat].[localhost]=TRACE
-						# logging.level.org.apache.catalina.core=TRACE
-						# logging.level.org.apache.catalina.LifecycleException=TRACE
-						logging.level.org.apache.catalina.loader.WebappClassLoaderBase=OFF
-						# logging.level.org.apache.catalina.session=TRACE
-						# logging.level.org.apache.catalina.startup.ContextConfig=OFF
-						# logging.level.org.apache.catalina.util.LifecycleBase=TRACE
-						# logging.level.org.apache.catalina.util=TRACE
-						# logging.level.org.apache.catalina=TRACE
-						# logging.level.org.apache.coyote=TRACE
-						# logging.level.org.apache.logging.log4j.core.net=TRACE
-						# logging.level.org.apache.naming=OFF
-						logging.level.org.apache.tomcat.util.IntrospectionUtils=OFF
-						# logging.level.org.apache.tomcat.util.net=TRACE
-						logging.level.org.apache.tomcat.util.scan=OFF
-						# logging.level.org.apache.tomcat.util=TRACE
-						logging.level.org.labkey.embedded.LabKeyServer=DEBUG
-						logging.level.org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener=OFF
-						# logging.level.org.springframework.boot.autoconfigure=OFF
-						# logging.level.org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainer=TRACE
-						# logging.level.org.springframework.boot.web.embedded.tomcat.TomcatWebServer=TRACE
-						# logging.level.org.springframework.boot.web.servlet.context=TRACE
-						# logging.level.org.springframework.boot.web.servlet=WARN
 						logging.level.org.springframework.boot=INFO
 
 						logging.level.org.springframework.jdbc.core=WARN
@@ -422,33 +393,14 @@ function step_create_app_properties() {
 						logging.level.org.springframework.boot.web.servlet.ServletContextInitializerBeans=WARN
 						logging.level.org.springframework.boot=WARN
 
-						# logging.level.org.apache.catalina.loader.WebappClassLoaderBase=INFO
 						logging.level.org.apache.jasper.servlet.TldScanner=WARN
 						logging.level.org.apache.tomcat.util.digester.Digester=INFO
-
-						# logging.level.org.apache.tomcat.util.scan.StandardJarScanner=INFO
-						# logging.level.org.springframework.boot.autoconfigure.condition=INFO
-						# logging.level.org.springframework.core.env.PropertySourcesPropertyResolver=INFO
 
 						context.dataSourceName[0]=jdbc/labkeyDataSource
 						context.driverClassName[0]=org.postgresql.Driver
 						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
 						context.username[0]=${POSTGRES_USER}
 						context.password[0]=${POSTGRES_PASSWORD}
-
-						# context.dataSourceName[1]=jdbc/@@extraJdbcDataSource@@
-						# context.driverClassName[1]=@@extraJdbcDriverClassName@@
-						# context.url[1]=@@extraJdbcURL@@
-						# context.username[1]=@@extraJdbcUser@@
-						# context.password[1]=@@extraJdbcPassword@@
-
-						# TODO: console access logs w/o symlink
-						# server.tomcat.accesslog.enabled=true
-						# server.tomcat.accesslog.directory=/dev
-						# server.tomcat.accesslog.prefix=stdout
-						# server.tomcat.accesslog.buffered=false
-						# server.tomcat.accesslog.suffix=
-						# server.tomcat.accesslog.pattern=%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t "%r" %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s %q
 
 						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
 						server.tomcat.accesslog.enabled=true
@@ -458,14 +410,12 @@ function step_create_app_properties() {
 						server.tomcat.accesslog.pattern=%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t "%r" %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s %q
 
 						server.http2.enabled=true
-
 						server.ssl.enabled=true
 
 						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
 						server.ssl.enabled-protocols=${TOMCAT_SSL_ENABLED_PROTOCOLS}
 						server.ssl.protocol=${TOMCAT_SSL_PROTOCOL}
 
-						# must match values in entrypoint.sh
 						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
 						server.ssl.key-store=${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}
 						server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
