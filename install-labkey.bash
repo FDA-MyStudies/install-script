@@ -450,7 +450,7 @@ function step_create_app_properties() {
 						# server.tomcat.accesslog.suffix=
 						# server.tomcat.accesslog.pattern=%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t "%r" %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s %q
 
-						server.tomcat.accesslog.directory=/tmp
+						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
 						server.tomcat.accesslog.enabled=true
 						server.tomcat.accesslog.prefix=access
 						server.tomcat.accesslog.suffix=.log
