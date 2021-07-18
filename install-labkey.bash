@@ -444,8 +444,9 @@ function step_create_app_properties() {
 
 						management.endpoints.enabled-by-default=false
 						management.endpoint.health.enabled=true
+						management.endpoint.info.enabled=true
 
-						management.endpoints.web.exposure.include=health
+						management.endpoints.web.exposure.include=health,info
 						management.endpoints.jmx.exposure.exclude=*
 
 						management.endpoint.env.keys-to-sanitize=.*user.*,.*pass.*,secret,key,token,.*credentials.*,vcap_services,sun.java.command,.*key-store.*
