@@ -79,8 +79,8 @@ function platform_version() {
 }
 
 function console_msg() {
-  bold=$(tput bold)
-  normal=$(tput sgr0)
+  bold=$'\033[1m'
+  normal=$'\033[0m'
   echo "${normal}---------${bold} $1 ${normal}---------"
 }
 
