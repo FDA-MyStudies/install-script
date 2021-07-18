@@ -157,6 +157,11 @@ function step_default_envs() {
   TOMCAT_KEYSTORE_FILENAME="${TOMCAT_KEYSTORE_FILENAME:-keystore.tomcat.p12}"
   TOMCAT_KEYSTORE_ALIAS="${TOMCAT_KEYSTORE_ALIAS:-tomcat}"
   TOMCAT_KEYSTORE_FORMAT="${TOMCAT_KEYSTORE_FORMAT:-PKCS12}"
+
+  TOMCAT_SSL_CIPHERS="${TOMCAT_SSL_CIPHERS:-HIGH:!ADH:!EXP:!SSLv2:!SSLv3:!MEDIUM:!LOW:!NULL:!aNULL}"
+  TOMCAT_SSL_ENABLED_PROTOCOLS="${TOMCAT_SSL_ENABLED_PROTOCOLS:-TLSv1.3,+TLSv1.2}"
+  TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
+
   # Generate password if none is provided
   TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   CERT_C="${CERT_C:-US}"
@@ -456,10 +461,9 @@ function step_create_app_properties() {
 
 						server.ssl.enabled=true
 
-						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS:-HIGH:!ADH:!EXP:!SSLv2:!SSLv3:!MEDIUM:!LOW:!NULL:!aNULL}
-						server.ssl.enabled-protocols=${TOMCAT_SSL_ENABLED_PROTOCOLS:-TLSv1.3,+TLSv1.2}
-						server.ssl.protocol=${TOMCAT_SSL_PROTOCOL:-TLS}
-
+						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
+						server.ssl.enabled-protocols=${TOMCAT_SSL_ENABLED_PROTOCOLS}
+						server.ssl.protocol=${TOMCAT_SSL_PROTOCOL}
 
 						# must match values in entrypoint.sh
 						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
