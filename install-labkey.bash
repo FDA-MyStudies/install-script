@@ -321,11 +321,6 @@ function step_download() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   local ret=0
 
-  # attempt to download all binaries
-  #   fail if URLs incorrect/download fails
-  #   fail if download succeeds but it 0 bytes
-  # (option) verify checksums
-
   # download labkey distribution
   cd "$LABKEY_SRC_HOME" || exit
   if [ ! -s "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_FILENAME}" ]; then
