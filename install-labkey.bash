@@ -432,7 +432,7 @@ function step_create_app_properties() {
 
 						context.dataSourceName[0]=jdbc/labkeyDataSource
 						context.driverClassName[0]=org.postgresql.Driver
-						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB:-${POSTGRES_USER}}${POSTGRES_PARAMETERS}
+						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
 						context.username[0]=${POSTGRES_USER}
 						context.password[0]=${POSTGRES_PASSWORD}
 
