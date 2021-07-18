@@ -277,7 +277,6 @@ function step_os_prereqs() {
     fi
     sudo yum update -y
     sudo yum install -y "$ADOPTOPENJDK_VERSION"
-
     ;;
 
   _centos)
@@ -298,7 +297,6 @@ function step_os_prereqs() {
       ) >"$NewFile"
     fi
     sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
-
     ;;
 
   _ubuntu)
@@ -312,7 +310,6 @@ function step_os_prereqs() {
 
     sudo apt-get update
     sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
-
     ;;
 
   _*)
