@@ -40,13 +40,13 @@ jobs:
         env:
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test:
-    name: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+  # test:
+  #   name: test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - name: shunit2
-        uses: sudo-bot/action-shunit2@latest
-        with:
-          cli: "test/runner.sh"
+  #     - name: shunit2
+  #       uses: sudo-bot/action-shunit2@latest
+  #       with:
+  #         cli: "test/runner.sh"
