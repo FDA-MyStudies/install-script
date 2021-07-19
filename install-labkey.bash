@@ -248,7 +248,7 @@ function step_create_required_paths() {
 function step_os_prereqs() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  if ! command -v systemctl 2>&1 >/dev/null; then
+  if ! command -v systemctl >/dev/null 2>&1; then
     echo '
 
       "systemctl" required but not detected!
