@@ -148,6 +148,7 @@ function step_default_envs() {
   LABKEY_GUID="${LABKEY_GUID:-$(uuidgen)}"
 
   # Tomcat env vars
+  TOMCAT_INSTALL_TYPE="${TOMCAT_INSTALL_TYPE:-Embedded}"
   TOMCAT_INSTALL_HOME="${TOMCAT_INSTALL_HOME:-$LABKEY_INSTALL_HOME}"
   TOMCAT_TIMEZONE="${TOMCAT_TIMEZONE:-America/Los_Angeles}"
   CATALINA_HOME="${CATALINA_HOME:-$TOMCAT_INSTALL_HOME}"
@@ -678,8 +679,14 @@ function step_configure_labkey() {
 
 }
 
-function step_tomcat_service() {
+function step_tomcat_service_embedded() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE != "Embedded" ]]; then
+    comsole_msg "Skipping configuring tomcat service for embedded - this is not an embedded install."
+    console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1"
+    return 0
+  fi
 
   # Env Vars for tomcat_service file
   # shellcheck disable=SC2046
@@ -808,7 +815,7 @@ function main() {
   step_configure_labkey
 
   console_msg "Configuring Tomcat Service"
-  step_tomcat_service
+  step_tomcat_service_embedded
 
   console_msg "Configuring Alt Files Root Link"
   step_alt_files_link
