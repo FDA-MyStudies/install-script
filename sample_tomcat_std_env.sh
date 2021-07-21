@@ -19,3 +19,6 @@ export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads
 export LABKEY_DIST_FILENAME="LabKey21.7.0-2-community.tar.gz"
 export LABKEY_VERSION="21.7.0"
 export LABKEY_DISTRIBUTION="community"
+export LABKEY_LOG_DIR="/labkey/apps/tomcat/logs"
+export LABKEY_CONFIG_DIR="/labkey/apps/tomcat/config"
+export LABKEY_STARTUP_DIR="/labkey/labkey/startup"

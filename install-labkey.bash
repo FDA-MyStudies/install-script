@@ -143,6 +143,10 @@ function step_default_envs() {
   LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.7.0-2-community-embedded.tar.gz}"
   LABKEY_DIST_DIR="${LABKEY_DIST_DIR:-${LABKEY_DIST_FILENAME::-16}}"
   LABKEY_PORT="${LABKEY_PORT:-8443}"
+  LABKEY_LOG_DIR="${LABKEY_LOG_DIR:-${LABKEY_INSTALL_HOME}/logs}"
+  LABKEY_CONFIG_DIR="${LABKEY_CONFIG_DIR:-${LABKEY_INSTALL_HOME}/config}"
+  LABKEY_EXT_MODULES_DIR="${LABKEY_EXT_MODULES_DIR:-${LABKEY_INSTALL_HOME}/externalModules}"
+  LABKEY_STARTUP_DIR="${LABKEY_STARTUP_DIR:-${LABKEY_INSTALL_HOME}/server/startup}"
   # Generate MEK and GUID if none is provided
   LABKEY_MEK="${LABKEY_MEK:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   LABKEY_GUID="${LABKEY_GUID:-$(uuidgen)}"
@@ -151,6 +155,8 @@ function step_default_envs() {
   TOMCAT_INSTALL_TYPE="${TOMCAT_INSTALL_TYPE:-Embedded}"
   TOMCAT_INSTALL_HOME="${TOMCAT_INSTALL_HOME:-$LABKEY_INSTALL_HOME}"
   TOMCAT_TIMEZONE="${TOMCAT_TIMEZONE:-America/Los_Angeles}"
+  TOMCAT_TMP_DIR="${TOMCAT_TMP_DIR:-${LABKEY_APP_HOME}/tomcat-tmp}"
+  TOMCAT_LIB_PATH="${TOMCAT_LIB_PATH:-/usr/lib64}"
   CATALINA_HOME="${CATALINA_HOME:-$TOMCAT_INSTALL_HOME}"
   TOMCAT_USERNAME="${TOMCAT_USERNAME:-tomcat}"
   TOMCAT_UID="${TOMCAT_UID:-3000}"
@@ -166,6 +172,8 @@ function step_default_envs() {
   # Used for Standard Tomcat installs only
   TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.50}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+  # Used for non-embedded distributions
+  LABKEY_INSTALLER_CMD="$LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat"
 
   # Generate password if none is provided
   TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
@@ -237,12 +245,12 @@ function step_create_required_paths() {
   create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
   create_req_dir "${TOMCAT_KEYSTORE_BASE_PATH}"
-  create_req_dir "${LABKEY_APP_HOME}/tomcat-tmp"
+  create_req_dir "${TOMCAT_TMP_DIR}"
   # directories needed for embedded tomcat builds
-  create_req_dir "${LABKEY_INSTALL_HOME}/logs"
-  create_req_dir "${LABKEY_INSTALL_HOME}/config"
-  create_req_dir "${LABKEY_INSTALL_HOME}/externalModules"
-  create_req_dir "${LABKEY_INSTALL_HOME}/server/startup"
+  create_req_dir "${LABKEY_LOG_DIR}"
+  create_req_dir "${LABKEY_CONFIG_DIR}"
+  create_req_dir "${LABKEY_EXT_MODULES_DIR}"
+  create_req_dir "${LABKEY_STARTUP_DIR}"
   # TODO not sure if these are needed
   create_req_dir "${TOMCAT_INSTALL_HOME}/lib"
   create_req_dir "/work/Tomcat/localhost/ROOT"
@@ -306,6 +314,8 @@ function step_os_prereqs() {
 
   _ubuntu)
     # ubuntu stuff here
+    export DEBIAN_FRONTEND=noninteractive
+    TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptopenjdk repo
     DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
     if ! grep -q "$DEB_JDK_REPO" "/etc/apt/sources.list"; then
@@ -314,7 +324,8 @@ function step_os_prereqs() {
     fi
 
     sudo apt-get update
-    sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
+    sudo apt-get install -y "$ADOPTOPENJDK_VERSION" libtcnative-1 libapr1
+    sudo apt-get -y dist-upgrade
     ;;
 
   _*)
@@ -348,6 +359,11 @@ function step_download() {
 
 function step_create_app_properties() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    console_msg "Skipping creating of application.properties as this file is not needed for non-embedded tomcat installs"
+    return 0
+  fi
 
   # application properties depends on the ${LABKEY_INSTALL_HOME} directory - error if no directory exists
   if [ ! -d "${LABKEY_INSTALL_HOME}" ]; then
@@ -472,11 +488,11 @@ function step_startup_properties() {
   fi
 
   if [ -d "$LABKEY_INSTALL_HOME" ]; then
-    if [ ! -d "$LABKEY_INSTALL_HOME/server/startup" ]; then
-      create_req_dir "$LABKEY_INSTALL_HOME/server/startup"
+    if [ ! -d "$LABKEY_STARTUP_DIR" ]; then
+      create_req_dir "LABKEY_STARTUP_DIR"
     fi
     # create startup properties file
-    NewFile="$LABKEY_INSTALL_HOME/server/startup/50_basic-startup.properties"
+    NewFile="$LABKEY_STARTUP_DIR/50_basic-startup.properties"
     (
       /bin/cat <<-STARTUP_PROPS_HERE
 				LookAndFeelSettings.companyName=${LABKEY_COMPANY_NAME}
@@ -657,28 +673,39 @@ function step_configure_labkey() {
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_INSTALL_HOME}"
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}"
 
-  # TODO not sure if this is needed
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "/work/Tomcat/"
+  # Configure for embedded
+  if [[ $TOMCAT_INSTALL_TYPE == "Embedded" ]]; then
 
-  # strip -embedded from filename to get expected directory name
+    # TODO not sure if this is needed
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "/work/Tomcat/"
 
-  if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}" ]; then
-    # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
-    if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
-      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
-      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+    # strip -embedded from filename to get expected directory name
+
+    if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}" ]; then
+      # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
+      if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+      else
+        console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
+        export ret=1
+      fi
+      # copy bin directory from distribution
+      if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" ]; then
+        cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
+      fi
     else
-      console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
-      export ret=1
+      console_msg "ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars."
+      console_msg "Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
     fi
-    # copy bin directory from distribution
-    if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" ]; then
-      cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
-    fi
-  else
-    console_msg "ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars."
-    console_msg "Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
   fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    # install non-embedded LabKey distro
+    cd "$LABKEY_SRC_HOME" || exit
+    $LABKEY_INSTALLER_CMD
+  fi
+
   return "$ret"
 
 }
@@ -695,9 +722,9 @@ function step_tomcat_service_embedded() {
   # Env Vars for tomcat_service file
   # shellcheck disable=SC2046
   JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
-  JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
-  JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${LABKEY_APP_HOME}/tomcat-tmp -Djava.net.preferIPv4Stack=true"
-  LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
+  JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=${TOMCAT_LIB_PATH} -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
+  JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${TOMCAT_TMP_DIR} -Djava.net.preferIPv4Stack=true"
+  LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${TOMCAT_TMP_DIR}"
   JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
   JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
 
@@ -752,15 +779,16 @@ function step_tomcat_service_standard() {
   if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
     # shellcheck disable=SC2046
     JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
+    create_req_dir "$TOMCAT_INSTALL_HOME/conf/Catalina/localhost"
 
     # Download tomcat
     cd "${LABKEY_APP_HOME}/src/" || exit
     wget --no-verbose "$TOMCAT_URL"
     tar xzf "apache-tomcat-$TOMCAT_VERSION.tar.gz"
-    cp -aR "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION/*" "$TOMCAT_INSTALL_HOME/"
+    cp -aR "${LABKEY_APP_HOME}"/src/apache-tomcat-"$TOMCAT_VERSION"/* "$TOMCAT_INSTALL_HOME/"
     chmod 0755 "$TOMCAT_INSTALL_HOME"
     chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
-    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_APP_HOME/tomcat-tmp"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_TMP_DIR"
     chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_INSTALL_HOME"
     rm "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION.tar.gz"
     rm -Rf "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION"
@@ -782,8 +810,8 @@ function step_tomcat_service_standard() {
 				Type=forking
 				Environment="JAVA_HOME=$JAVA_HOME"
 				Environment="CATALINA_BASE=$TOMCAT_INSTALL_HOME"
-				Environment="CATALINA_OPTS=-Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$LABKEY_APP_HOME/tomcat-tmp -Djava.net.preferIPv4Stack=true"
-				Environment="CATALINA_TMPDIR=$LABKEY_APP_HOME/tomcat-tmp"
+				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true"
+				Environment="CATALINA_TMPDIR=$TOMCAT_TMP_DIR"
 
 
 				ExecStart=$TOMCAT_INSTALL_HOME/bin/catalina.sh start
@@ -968,7 +996,7 @@ function step_tomcat_service_standard() {
             noCompressionUserAgents="gozilla, traviata"
             compressableMimeType="text/html,text/xml,text/css,application/json"
             keystoreType="pkcs12"
-            keystorePass="$TOMCAT_SSL_KEYSTORE_PASSWORD"
+            keystorePass="$TOMCAT_KEYSTORE_PASSWORD"
             keystoreFile="$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME"
             maxThreads="150"
         >
@@ -1090,7 +1118,7 @@ ROOTXMLHERE
     chmod 600 "$TomcatROOTXMLFile"
     echo "Tomcat ROOT.xml file created at $TomcatROOTXMLFile"
     chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
-    comsole_msg " Tomcat (Standard) has been installed and configured."
+    console_msg " Tomcat (Standard) has been installed and configured."
   fi
 
 }
@@ -1173,8 +1201,11 @@ function main() {
   console_msg "Configuring LabKey"
   step_configure_labkey
 
-  console_msg "Configuring Tomcat Service"
+  console_msg "Configuring Embedded Tomcat Service"
   step_tomcat_service_embedded
+
+  console_msg "Configuring Standard Tomcat Service"
+  step_tomcat_service_standard
 
   console_msg "Configuring Alt Files Root Link"
   step_alt_files_link
