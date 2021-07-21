@@ -714,7 +714,7 @@ function step_tomcat_service_embedded() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   if [[ $TOMCAT_INSTALL_TYPE != "Embedded" ]]; then
-    comsole_msg "Skipping configuring tomcat service for embedded - this is not an embedded install."
+    console_msg "Skipping configuring tomcat service for embedded - this is not an embedded install."
     console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1"
     return 0
   fi
@@ -771,7 +771,7 @@ function step_tomcat_service_standard() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   if [[ $TOMCAT_INSTALL_TYPE != "Standard" ]]; then
-    comsole_msg "Skipping tomcat (standard) service config."
+    console_msg "Skipping tomcat (standard) service config."
     console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_STANDARD_STEP=1"
     return 0
   fi
