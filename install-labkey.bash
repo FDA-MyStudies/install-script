@@ -163,6 +163,10 @@ function step_default_envs() {
   TOMCAT_SSL_ENABLED_PROTOCOLS="${TOMCAT_SSL_ENABLED_PROTOCOLS:-TLSv1.3,+TLSv1.2}"
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
+  # Used for Standard Tomcat installs only
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.50}"
+  TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+
   # Generate password if none is provided
   TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   CERT_C="${CERT_C:-US}"
@@ -732,6 +736,361 @@ function step_tomcat_service_embedded() {
 				WantedBy=multi-user.target
 				HERE_TOMCAT_SERVICE
     ) >$NewFile
+  fi
+
+}
+
+function step_tomcat_service_standard() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE != "Standard" ]]; then
+    comsole_msg "Skipping tomcat (standard) service config."
+    console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_STANDARD_STEP=1"
+    return 0
+  fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    # shellcheck disable=SC2046
+    JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
+
+    # Download tomcat
+    cd "${LABKEY_APP_HOME}/src/" || exit
+    wget --no-verbose "$TOMCAT_URL"
+    tar xzf "apache-tomcat-$TOMCAT_VERSION.tar.gz"
+    cp -aR "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION/*" "$TOMCAT_INSTALL_HOME/"
+    chmod 0755 "$TOMCAT_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_APP_HOME/tomcat-tmp"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_INSTALL_HOME"
+    rm "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+    rm -Rf "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION"
+    chmod 0700 "${CATALINA_HOME}/conf/Catalina/localhost"
+
+    # Create Standard Tomcat Systemd service file -
+
+    #create tomcat_lk systemd service file
+    NewFile='/etc/systemd/system/tomcat_lk.service'
+    (
+      /bin/cat <<-HERE_STD_TOMCAT_SERVICE
+				# Systemd unit file for tomcat_lk
+
+				[Unit]
+				Description=lk Apache Tomcat Application
+				After=syslog.target network.target
+
+				[Service]
+				Type=forking
+				Environment="JAVA_HOME=$JAVA_HOME"
+				Environment="CATALINA_BASE=$TOMCAT_INSTALL_HOME"
+				Environment="CATALINA_OPTS=-Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$LABKEY_APP_HOME/tomcat-tmp -Djava.net.preferIPv4Stack=true"
+				Environment="CATALINA_TMPDIR=$LABKEY_APP_HOME/tomcat-tmp"
+
+
+				ExecStart=$TOMCAT_INSTALL_HOME/bin/catalina.sh start
+				ExecStop=$TOMCAT_INSTALL_HOME/bin/catalina.sh stop
+				SuccessExitStatus=0 143
+				Restart=on-failure
+				RestartSec=2
+
+				User=tomcat
+				Group=tomcat
+
+				[Install]
+				WantedBy=multi-user.target
+				HERE_STD_TOMCAT_SERVICE
+    ) >$NewFile
+
+    # create tomcat server.xml
+    TomcatServerFile="$CATALINA_HOME/conf/server.xml"
+    (
+      /bin/cat <<SERVERXMLHERE
+<?xml version='1.0' encoding='utf-8' ?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements. See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License. You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<!--
+    Note: A "Server" is not itself a "Container", so you may not define
+    subcomponents such as "Valves" at this level.
+    Documentation at /docs/config/server.html
+-->
+<Server port="8005" shutdown="SHUTDOWN">
+
+    <!--
+        APR library loader.
+        Documentation at /docs/apr.html
+    -->
+    <Listener
+        className="org.apache.catalina.core.AprLifecycleListener"
+        SSLEngine="on"
+        useAprConnector="true"
+    />
+
+    <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+
+    <!--
+        Security listener.
+        Documentation at /docs/config/listeners.html
+    -->
+    <Listener className="org.apache.catalina.security.SecurityListener" />
+
+    <!--
+        Prevent memory leaks due to use of particular java/javax APIs
+    -->
+    <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+    <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+    <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+    <!--
+        Global JNDI resources
+        Documentation at /docs/jndi-resources-howto.html
+    -->
+    <GlobalNamingResources>
+
+        <!--
+            Editable user database that can also be used by UserDatabaseRealm
+            to authenticate users
+        -->
+        <Resource
+            name="UserDatabase"
+            auth="Container"
+            type="org.apache.catalina.UserDatabase"
+            description="User database that can be updated and saved"
+            factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+            pathname="conf/tomcat-users.xml"
+        />
+
+    </GlobalNamingResources>
+
+    <!--
+        A "Service" is a collection of one or more "Connectors" that share a
+        single "Container" Note: A "Service" is not itself a "Container", so
+        you may not define subcomponents such as "Valves" at this level.
+        Documentation at /docs/config/service.html
+    -->
+    <Service name="Catalina">
+
+        <!--
+            The connectors will use a shared executor, you can define one or
+            more named thread pools. For LabKey Server, a single shared pool
+            will be used for all connectors.
+        -->
+        <Executor
+            name="tomcatSharedThreadPool"
+            namePrefix="catalina-exec-"
+            maxThreads="300"
+            minSpareThreads="25"
+            maxIdleTime="20000"
+        />
+
+        <!-- Define HTTP connector -->
+        <Connector
+            port="8080"
+            redirectPort="8443"
+            scheme="http"
+            protocol="org.apache.coyote.http11.Http11AprProtocol"
+            executor="tomcatSharedThreadPool"
+            acceptCount="100"
+            connectionTimeout="20000"
+            disableUploadTimeout="true"
+            enableLookups="false"
+            maxHttpHeaderSize="8192"
+            minSpareThreads="25"
+            useBodyEncodingForURI="true"
+            URIEncoding="UTF-8"
+            compression="on"
+            compressionMinSize="2048"
+            noCompressionUserAgents="gozilla, traviata"
+            compressableMimeType="text/html,text/xml,text/css,application/json"
+        >
+            <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+        </Connector>
+
+
+        <!-- Define HTTPS connector -->
+        <Connector
+            port="8443"
+            scheme="https"
+            secure="true"
+            SSLEnabled="true"
+            sslEnabledProtocols="TLSv1.2"
+            sslProtocol="TLSv1.2"
+            ciphers="TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+            protocol="org.apache.coyote.http11.Http11AprProtocol"
+            executor="tomcatSharedThreadPool"
+            acceptCount="100"
+            connectionTimeout="20000"
+            clientAuth="false"
+            disableUploadTimeout="true"
+            enableLookups="false"
+            maxHttpHeaderSize="8192"
+            minSpareThreads="25"
+            useBodyEncodingForURI="true"
+            URIEncoding="UTF-8"
+            compression="on"
+            compressionMinSize="2048"
+            noCompressionUserAgents="gozilla, traviata"
+            compressableMimeType="text/html,text/xml,text/css,application/json"
+            keystoreType="pkcs12"
+            keystorePass="$TOMCAT_SSL_KEYSTORE_PASSWORD"
+            keystoreFile="$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME"
+            maxThreads="150"
+        >
+            <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+        </Connector>
+
+        <!--
+             Define an AJP 1.3 Connector on port 8009 -->
+        <!-- Disable AJP -->
+        <!--
+        <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+        -->
+
+        <!--
+            An Engine represents the entry point (within Catalina) that
+            processes every request. The Engine implementation for Tomcat stand
+            alone analyzes the HTTP headers included with the request, and
+            passes them on to the appropriate Host (virtual host).
+            Documentation at /docs/config/engine.html
+        -->
+        <Engine name="Catalina" defaultHost="localhost">
+
+            <!--
+                Use the LockOutRealm to prevent attempts to guess user passwords
+                via a brute-force attack
+            -->
+            <Realm className="org.apache.catalina.realm.LockOutRealm">
+
+                <!--
+                    This Realm uses the UserDatabase configured in the global JNDI
+                    resources under the key "UserDatabase". Any edits
+                    that are performed against this UserDatabase are immediately
+                    available for use by the Realm.
+                -->
+                <Realm
+                    className="org.apache.catalina.realm.UserDatabaseRealm"
+                    resourceName="UserDatabase"
+                />
+
+            </Realm>
+
+            <Host
+                name="localhost"
+                appBase="webapps"
+                unpackWARs="true"
+                autoDeploy="true"
+            >
+
+                <!--
+                    pulls the remote IP from the XForward-For header
+                -->
+                <!-- Remote IP Valve -->
+                <Valve className="org.apache.catalina.valves.RemoteIpValve" />
+
+                <!--
+                    Access log processes all example.
+                    Documentation at: /docs/config/valve.html
+                    Note: The pattern used is equivalent to using pattern="common"
+                -->
+                <Valve
+                    className="org.apache.catalina.valves.AccessLogValve"
+                    directory="logs"
+                    prefix="localhost_access_log"
+                    suffix=".txt"
+                    resolveHosts="false"
+                    pattern="%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t &quot;%r&quot; %s %b %D %S &quot;%{Referer}i&quot; &quot;%{User-Agent}i&quot; %{LABKEY.username}s %q"
+                />
+
+            </Host>
+        </Engine>
+    </Service>
+</Server>
+
+SERVERXMLHERE
+    ) >"$TomcatServerFile"
+    chmod 600 "$TomcatServerFile"
+
+    # create Tomcat ROOT.xml
+    TomcatROOTXMLFile="$CATALINA_HOME/conf/Catalina/localhost/ROOT.xml"
+    (
+      /bin/cat <<ROOTXMLHERE
+<?xml version='1.0' encoding='utf-8'?>
+<Context docBase="/labkey/labkey/labkeywebapp" reloadable="true" crossContext="true">
+
+    <Resource name="jdbc/labkeyDataSource" auth="Container"
+        type="javax.sql.DataSource"
+        username="$POSTGRES_USER"
+        password="$POSTGRES_PASSWORD"
+        driverClassName="org.postgresql.Driver"
+        url="jdbc:postgresql://$POSTGRES_HOST/$POSTGRES_DB"
+        accessToUnderlyingConnectionAllowed="true"
+        initialSize="5"
+        maxTotal="50"
+        maxIdle="5"
+        minIdle="4"
+        testOnBorrow="true"
+        testOnReturn="false"
+        testWhileIdle="true"
+        timeBetweenEvictionRunsMillis="60000"
+        minEvictableIdleTimeMillis="300000"
+        validationQuery="SELECT 1" />
+
+    <Resource name="mail/Session" auth="Container"
+        type="javax.mail.Session"
+        mail.smtp.host="$SMTP_HOST"
+        mail.smtp.user="anonymous"
+        mail.smtp.port="25"/>
+
+    <Loader loaderClass="org.labkey.bootstrap.LabkeyServerBootstrapClassLoader" />
+
+    <!-- Encryption key for encrypted property store -->
+    <Parameter name="MasterEncryptionKey" value="$LABKEY_MEK" />
+
+
+</Context>
+
+ROOTXMLHERE
+    ) >"$TomcatROOTXMLFile"
+    chmod 600 "$TomcatROOTXMLFile"
+    echo "Tomcat ROOT.xml file created at $TomcatROOTXMLFile"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
+    comsole_msg " Tomcat (Standard) has been installed and configured."
   fi
 
 }
