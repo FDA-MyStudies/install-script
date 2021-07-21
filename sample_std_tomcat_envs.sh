@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Sample Env vars to deploy standard tomcat
+# Sample Env vars to deploy standard tomcat - e.g. non-embedded
 
 export LABKEY_APP_HOME="/labkey"
 export LABKEY_FILES_ROOT="/labkey/labkey/files"
