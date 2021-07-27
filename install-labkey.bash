@@ -124,7 +124,21 @@ function step_default_envs() {
 
   # Java env vars
   ADOPTOPENJDK_VERSION="${ADOPTOPENJDK_VERSION:-adoptopenjdk-16-hotspot}"
-  JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-4G}"
+
+  # set default heap min/max to 50% (w/ <= 8G) or 75% of total mem
+  DEFAULT_JAVA_HEAP_SIZE="$(
+    total="$(free -m | grep ^Mem | tr -s ' ' | cut -d ' ' -f 2)"
+
+    if [ "$total" -ge 8192 ]; then
+      heap_modifier='75'
+    else
+      heap_modifier='50'
+    fi
+
+    echo -n "$((total * heap_modifier / 100))M"
+  )"
+
+  JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-${DEFAULT_JAVA_HEAP_SIZE}}"
 
   # LabKey env vars
   LABKEY_COMPANY_NAME="${LABKEY_COMPANY_NAME:-LabKey}"
@@ -143,13 +157,20 @@ function step_default_envs() {
   LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey21.7.0-2-community-embedded.tar.gz}"
   LABKEY_DIST_DIR="${LABKEY_DIST_DIR:-${LABKEY_DIST_FILENAME::-16}}"
   LABKEY_PORT="${LABKEY_PORT:-8443}"
+  LABKEY_LOG_DIR="${LABKEY_LOG_DIR:-${LABKEY_INSTALL_HOME}/logs}"
+  LABKEY_CONFIG_DIR="${LABKEY_CONFIG_DIR:-${LABKEY_INSTALL_HOME}/config}"
+  LABKEY_EXT_MODULES_DIR="${LABKEY_EXT_MODULES_DIR:-${LABKEY_INSTALL_HOME}/externalModules}"
+  LABKEY_STARTUP_DIR="${LABKEY_STARTUP_DIR:-${LABKEY_INSTALL_HOME}/server/startup}"
   # Generate MEK and GUID if none is provided
   LABKEY_MEK="${LABKEY_MEK:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   LABKEY_GUID="${LABKEY_GUID:-$(uuidgen)}"
 
   # Tomcat env vars
+  TOMCAT_INSTALL_TYPE="${TOMCAT_INSTALL_TYPE:-Embedded}"
   TOMCAT_INSTALL_HOME="${TOMCAT_INSTALL_HOME:-$LABKEY_INSTALL_HOME}"
   TOMCAT_TIMEZONE="${TOMCAT_TIMEZONE:-America/Los_Angeles}"
+  TOMCAT_TMP_DIR="${TOMCAT_TMP_DIR:-${LABKEY_APP_HOME}/tomcat-tmp}"
+  TOMCAT_LIB_PATH="${TOMCAT_LIB_PATH:-/usr/lib64}"
   CATALINA_HOME="${CATALINA_HOME:-$TOMCAT_INSTALL_HOME}"
   TOMCAT_USERNAME="${TOMCAT_USERNAME:-tomcat}"
   TOMCAT_UID="${TOMCAT_UID:-3000}"
@@ -161,6 +182,12 @@ function step_default_envs() {
   TOMCAT_SSL_CIPHERS="${TOMCAT_SSL_CIPHERS:-HIGH:!ADH:!EXP:!SSLv2:!SSLv3:!MEDIUM:!LOW:!NULL:!aNULL}"
   TOMCAT_SSL_ENABLED_PROTOCOLS="${TOMCAT_SSL_ENABLED_PROTOCOLS:-TLSv1.3,+TLSv1.2}"
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
+
+  # Used for Standard Tomcat installs only
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.50}"
+  TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+  # Used for non-embedded distributions
+  LABKEY_INSTALLER_CMD="$LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat"
 
   # Generate password if none is provided
   TOMCAT_KEYSTORE_PASSWORD="${TOMCAT_KEYSTORE_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
@@ -232,12 +259,12 @@ function step_create_required_paths() {
   create_req_dir "${LABKEY_INSTALL_HOME}"
   create_req_dir "${TOMCAT_INSTALL_HOME}"
   create_req_dir "${TOMCAT_KEYSTORE_BASE_PATH}"
-  create_req_dir "${LABKEY_APP_HOME}/tomcat-tmp"
+  create_req_dir "${TOMCAT_TMP_DIR}"
   # directories needed for embedded tomcat builds
-  create_req_dir "${LABKEY_INSTALL_HOME}/logs"
-  create_req_dir "${LABKEY_INSTALL_HOME}/config"
-  create_req_dir "${LABKEY_INSTALL_HOME}/externalModules"
-  create_req_dir "${LABKEY_INSTALL_HOME}/server/startup"
+  create_req_dir "${LABKEY_LOG_DIR}"
+  create_req_dir "${LABKEY_CONFIG_DIR}"
+  create_req_dir "${LABKEY_EXT_MODULES_DIR}"
+  create_req_dir "${LABKEY_STARTUP_DIR}"
   # TODO not sure if these are needed
   create_req_dir "${TOMCAT_INSTALL_HOME}/lib"
   create_req_dir "/work/Tomcat/localhost/ROOT"
@@ -301,6 +328,8 @@ function step_os_prereqs() {
 
   _ubuntu)
     # ubuntu stuff here
+    export DEBIAN_FRONTEND=noninteractive
+    TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptopenjdk repo
     DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
     if ! grep -q "$DEB_JDK_REPO" "/etc/apt/sources.list"; then
@@ -309,7 +338,8 @@ function step_os_prereqs() {
     fi
 
     sudo apt-get update
-    sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
+    sudo apt-get install -y "$ADOPTOPENJDK_VERSION" libtcnative-1 libapr1
+    sudo apt-get -y dist-upgrade
     ;;
 
   _*)
@@ -343,6 +373,11 @@ function step_download() {
 
 function step_create_app_properties() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    console_msg "Skipping creating of application.properties as this file is not needed for non-embedded tomcat installs"
+    return 0
+  fi
 
   # application properties depends on the ${LABKEY_INSTALL_HOME} directory - error if no directory exists
   if [ ! -d "${LABKEY_INSTALL_HOME}" ]; then
@@ -467,11 +502,11 @@ function step_startup_properties() {
   fi
 
   if [ -d "$LABKEY_INSTALL_HOME" ]; then
-    if [ ! -d "$LABKEY_INSTALL_HOME/server/startup" ]; then
-      create_req_dir "$LABKEY_INSTALL_HOME/server/startup"
+    if [ ! -d "$LABKEY_STARTUP_DIR" ]; then
+      create_req_dir "LABKEY_STARTUP_DIR"
     fi
     # create startup properties file
-    NewFile="$LABKEY_INSTALL_HOME/server/startup/50_basic-startup.properties"
+    NewFile="$LABKEY_STARTUP_DIR/50_basic-startup.properties"
     (
       /bin/cat <<-STARTUP_PROPS_HERE
 				LookAndFeelSettings.companyName=${LABKEY_COMPANY_NAME}
@@ -652,41 +687,58 @@ function step_configure_labkey() {
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_INSTALL_HOME}"
   chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}"
 
-  # TODO not sure if this is needed
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "/work/Tomcat/"
+  # Configure for embedded
+  if [[ $TOMCAT_INSTALL_TYPE == "Embedded" ]]; then
 
-  # strip -embedded from filename to get expected directory name
+    # TODO not sure if this is needed
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "/work/Tomcat/"
 
-  if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}" ]; then
-    # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
-    if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
-      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
-      cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+    # strip -embedded from filename to get expected directory name
+
+    if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}" ]; then
+      # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
+      if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+      else
+        console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
+        export ret=1
+      fi
+      # copy bin directory from distribution
+      if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" ]; then
+        cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
+      fi
     else
-      console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
-      export ret=1
+      console_msg "ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars."
+      console_msg "Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
     fi
-    # copy bin directory from distribution
-    if [ -d "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" ]; then
-      cp -a "${LABKEY_APP_HOME}/src/labkey/${LABKEY_DIST_DIR}/bin/" "${LABKEY_INSTALL_HOME}/bin/"
-    fi
-  else
-    console_msg "ERROR: Something is wrong. Unable to configure LabKey, please verify paths to LabKey Jar or LabKey VERSION and DISTRIBUTION Vars."
-    console_msg "Trying to find ${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar"
   fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    # install non-embedded LabKey distro
+    cd "$LABKEY_SRC_HOME" || exit
+    $LABKEY_INSTALLER_CMD
+  fi
+
   return "$ret"
 
 }
 
-function step_tomcat_service() {
+function step_tomcat_service_embedded() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE != "Embedded" ]]; then
+    console_msg "Skipping configuring tomcat service for embedded - this is not an embedded install."
+    console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1"
+    return 0
+  fi
 
   # Env Vars for tomcat_service file
   # shellcheck disable=SC2046
   JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
-  JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=/usr/lib64 -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
-  JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${LABKEY_APP_HOME}/tomcat-tmp -Djava.net.preferIPv4Stack=true"
-  LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${LABKEY_APP_HOME}/tomcat-tmp"
+  JAVA_PRE_JAR_OPS="-Duser.timezone=${TOMCAT_TIMEZONE} -Djava.library.path=${TOMCAT_LIB_PATH} -Djava.awt.headless=true -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -Djava.security.egd=file:/dev/./urandom"
+  JAVA_MID_JAR_OPS="-XX:+HeapDumpOnOutOfMemoryError -XX:+UseContainerSupport -XX:HeapDumpPath=${TOMCAT_TMP_DIR} -Djava.net.preferIPv4Stack=true"
+  LABKEY_JAR_OPS="-Dlabkey.home=${LABKEY_INSTALL_HOME} -Dlabkey.log.home=${LABKEY_INSTALL_HOME}/logs -Dlabkey.externalModulesDir=${LABKEY_INSTALL_HOME}/externalModules -Djava.io.tmpdir=${TOMCAT_TMP_DIR}"
   JAVA_FLAGS_JAR_OPS="-Dorg.apache.catalina.startup.EXIT_ON_INIT_FAILURE=true -DsynchronousStartup=true -DterminateOnStartupFailure=true"
   JAVA_LOG_JAR_OPS="-XX:ErrorFile=${LABKEY_INSTALL_HOME}/logs/error_%p.log -Dlog4j.configurationFile=log4j2.xml"
 
@@ -725,6 +777,362 @@ function step_tomcat_service() {
 				WantedBy=multi-user.target
 				HERE_TOMCAT_SERVICE
     ) >$NewFile
+  fi
+
+}
+
+function step_tomcat_service_standard() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [[ $TOMCAT_INSTALL_TYPE != "Standard" ]]; then
+    console_msg "Skipping tomcat (standard) service config."
+    console_msg "Consider skipping this step in future runs by using the Env var LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_STANDARD_STEP=1"
+    return 0
+  fi
+
+  if [[ $TOMCAT_INSTALL_TYPE == "Standard" ]]; then
+    # shellcheck disable=SC2046
+    JAVA_HOME="$(dirname $(dirname $(readlink -f /etc/alternatives/java)))"
+    create_req_dir "$TOMCAT_INSTALL_HOME/conf/Catalina/localhost"
+
+    # Download tomcat
+    cd "${LABKEY_APP_HOME}/src/" || exit
+    wget --no-verbose "$TOMCAT_URL"
+    tar xzf "apache-tomcat-$TOMCAT_VERSION.tar.gz"
+    cp -aR "${LABKEY_APP_HOME}"/src/apache-tomcat-"$TOMCAT_VERSION"/* "$TOMCAT_INSTALL_HOME/"
+    chmod 0755 "$TOMCAT_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_TMP_DIR"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_INSTALL_HOME"
+    rm "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+    rm -Rf "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION"
+    chmod 0700 "${CATALINA_HOME}/conf/Catalina/localhost"
+
+    # Create Standard Tomcat Systemd service file -
+
+    #create tomcat_lk systemd service file
+    NewFile='/etc/systemd/system/tomcat_lk.service'
+    (
+      /bin/cat <<-HERE_STD_TOMCAT_SERVICE
+				# Systemd unit file for tomcat_lk
+
+				[Unit]
+				Description=lk Apache Tomcat Application
+				After=syslog.target network.target
+
+				[Service]
+				Type=forking
+				Environment="JAVA_HOME=$JAVA_HOME"
+				Environment="CATALINA_BASE=$TOMCAT_INSTALL_HOME"
+				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true"
+				Environment="CATALINA_TMPDIR=$TOMCAT_TMP_DIR"
+
+
+				ExecStart=$TOMCAT_INSTALL_HOME/bin/catalina.sh start
+				ExecStop=$TOMCAT_INSTALL_HOME/bin/catalina.sh stop
+				SuccessExitStatus=0 143
+				Restart=on-failure
+				RestartSec=2
+
+				User=tomcat
+				Group=tomcat
+
+				[Install]
+				WantedBy=multi-user.target
+				HERE_STD_TOMCAT_SERVICE
+    ) >$NewFile
+
+    # create tomcat server.xml
+    TomcatServerFile="$CATALINA_HOME/conf/server.xml"
+    (
+      /bin/cat <<SERVERXMLHERE
+<?xml version='1.0' encoding='utf-8' ?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements. See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License. You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<!--
+    Note: A "Server" is not itself a "Container", so you may not define
+    subcomponents such as "Valves" at this level.
+    Documentation at /docs/config/server.html
+-->
+<Server port="8005" shutdown="SHUTDOWN">
+
+    <!--
+        APR library loader.
+        Documentation at /docs/apr.html
+    -->
+    <Listener
+        className="org.apache.catalina.core.AprLifecycleListener"
+        SSLEngine="on"
+        useAprConnector="true"
+    />
+
+    <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+
+    <!--
+        Security listener.
+        Documentation at /docs/config/listeners.html
+    -->
+    <Listener className="org.apache.catalina.security.SecurityListener" />
+
+    <!--
+        Prevent memory leaks due to use of particular java/javax APIs
+    -->
+    <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+    <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+    <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+    <!--
+        Global JNDI resources
+        Documentation at /docs/jndi-resources-howto.html
+    -->
+    <GlobalNamingResources>
+
+        <!--
+            Editable user database that can also be used by UserDatabaseRealm
+            to authenticate users
+        -->
+        <Resource
+            name="UserDatabase"
+            auth="Container"
+            type="org.apache.catalina.UserDatabase"
+            description="User database that can be updated and saved"
+            factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+            pathname="conf/tomcat-users.xml"
+        />
+
+    </GlobalNamingResources>
+
+    <!--
+        A "Service" is a collection of one or more "Connectors" that share a
+        single "Container" Note: A "Service" is not itself a "Container", so
+        you may not define subcomponents such as "Valves" at this level.
+        Documentation at /docs/config/service.html
+    -->
+    <Service name="Catalina">
+
+        <!--
+            The connectors will use a shared executor, you can define one or
+            more named thread pools. For LabKey Server, a single shared pool
+            will be used for all connectors.
+        -->
+        <Executor
+            name="tomcatSharedThreadPool"
+            namePrefix="catalina-exec-"
+            maxThreads="300"
+            minSpareThreads="25"
+            maxIdleTime="20000"
+        />
+
+        <!-- Define HTTP connector -->
+        <Connector
+            port="8080"
+            redirectPort="8443"
+            scheme="http"
+            protocol="org.apache.coyote.http11.Http11AprProtocol"
+            executor="tomcatSharedThreadPool"
+            acceptCount="100"
+            connectionTimeout="20000"
+            disableUploadTimeout="true"
+            enableLookups="false"
+            maxHttpHeaderSize="8192"
+            minSpareThreads="25"
+            useBodyEncodingForURI="true"
+            URIEncoding="UTF-8"
+            compression="on"
+            compressionMinSize="2048"
+            noCompressionUserAgents="gozilla, traviata"
+            compressableMimeType="text/html,text/xml,text/css,application/json"
+        >
+            <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+        </Connector>
+
+
+        <!-- Define HTTPS connector -->
+        <Connector
+            port="8443"
+            scheme="https"
+            secure="true"
+            SSLEnabled="true"
+            sslEnabledProtocols="TLSv1.2"
+            sslProtocol="TLSv1.2"
+            ciphers="TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+                     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+                     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+                     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                     TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+            protocol="org.apache.coyote.http11.Http11AprProtocol"
+            executor="tomcatSharedThreadPool"
+            acceptCount="100"
+            connectionTimeout="20000"
+            clientAuth="false"
+            disableUploadTimeout="true"
+            enableLookups="false"
+            maxHttpHeaderSize="8192"
+            minSpareThreads="25"
+            useBodyEncodingForURI="true"
+            URIEncoding="UTF-8"
+            compression="on"
+            compressionMinSize="2048"
+            noCompressionUserAgents="gozilla, traviata"
+            compressableMimeType="text/html,text/xml,text/css,application/json"
+            keystoreType="pkcs12"
+            keystorePass="$TOMCAT_KEYSTORE_PASSWORD"
+            keystoreFile="$TOMCAT_INSTALL_HOME/SSL/$TOMCAT_KEYSTORE_FILENAME"
+            maxThreads="150"
+        >
+            <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+        </Connector>
+
+        <!--
+             Define an AJP 1.3 Connector on port 8009 -->
+        <!-- Disable AJP -->
+        <!--
+        <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+        -->
+
+        <!--
+            An Engine represents the entry point (within Catalina) that
+            processes every request. The Engine implementation for Tomcat stand
+            alone analyzes the HTTP headers included with the request, and
+            passes them on to the appropriate Host (virtual host).
+            Documentation at /docs/config/engine.html
+        -->
+        <Engine name="Catalina" defaultHost="localhost">
+
+            <!--
+                Use the LockOutRealm to prevent attempts to guess user passwords
+                via a brute-force attack
+            -->
+            <Realm className="org.apache.catalina.realm.LockOutRealm">
+
+                <!--
+                    This Realm uses the UserDatabase configured in the global JNDI
+                    resources under the key "UserDatabase". Any edits
+                    that are performed against this UserDatabase are immediately
+                    available for use by the Realm.
+                -->
+                <Realm
+                    className="org.apache.catalina.realm.UserDatabaseRealm"
+                    resourceName="UserDatabase"
+                />
+
+            </Realm>
+
+            <Host
+                name="localhost"
+                appBase="webapps"
+                unpackWARs="true"
+                autoDeploy="true"
+            >
+
+                <!--
+                    pulls the remote IP from the XForward-For header
+                -->
+                <!-- Remote IP Valve -->
+                <Valve className="org.apache.catalina.valves.RemoteIpValve" />
+
+                <!--
+                    Access log processes all example.
+                    Documentation at: /docs/config/valve.html
+                    Note: The pattern used is equivalent to using pattern="common"
+                -->
+                <Valve
+                    className="org.apache.catalina.valves.AccessLogValve"
+                    directory="logs"
+                    prefix="localhost_access_log"
+                    suffix=".txt"
+                    resolveHosts="false"
+                    pattern="%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t &quot;%r&quot; %s %b %D %S &quot;%{Referer}i&quot; &quot;%{User-Agent}i&quot; %{LABKEY.username}s %q"
+                />
+
+            </Host>
+        </Engine>
+    </Service>
+</Server>
+
+SERVERXMLHERE
+    ) >"$TomcatServerFile"
+    chmod 600 "$TomcatServerFile"
+
+    # create Tomcat ROOT.xml
+    TomcatROOTXMLFile="$CATALINA_HOME/conf/Catalina/localhost/ROOT.xml"
+    (
+      /bin/cat <<ROOTXMLHERE
+<?xml version='1.0' encoding='utf-8'?>
+<Context docBase="/labkey/labkey/labkeywebapp" reloadable="true" crossContext="true">
+
+    <Resource name="jdbc/labkeyDataSource" auth="Container"
+        type="javax.sql.DataSource"
+        username="$POSTGRES_USER"
+        password="$POSTGRES_PASSWORD"
+        driverClassName="org.postgresql.Driver"
+        url="jdbc:postgresql://$POSTGRES_HOST/$POSTGRES_DB"
+        accessToUnderlyingConnectionAllowed="true"
+        initialSize="5"
+        maxTotal="50"
+        maxIdle="5"
+        minIdle="4"
+        testOnBorrow="true"
+        testOnReturn="false"
+        testWhileIdle="true"
+        timeBetweenEvictionRunsMillis="60000"
+        minEvictableIdleTimeMillis="300000"
+        validationQuery="SELECT 1" />
+
+    <Resource name="mail/Session" auth="Container"
+        type="javax.mail.Session"
+        mail.smtp.host="$SMTP_HOST"
+        mail.smtp.user="anonymous"
+        mail.smtp.port="25"/>
+
+    <Loader loaderClass="org.labkey.bootstrap.LabkeyServerBootstrapClassLoader" />
+
+    <!-- Encryption key for encrypted property store -->
+    <Parameter name="MasterEncryptionKey" value="$LABKEY_MEK" />
+
+
+</Context>
+
+ROOTXMLHERE
+    ) >"$TomcatROOTXMLFile"
+    chmod 600 "$TomcatROOTXMLFile"
+    echo "Tomcat ROOT.xml file created at $TomcatROOTXMLFile"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
+    console_msg " Tomcat (Standard) has been installed and configured."
   fi
 
 }
@@ -807,8 +1215,11 @@ function main() {
   console_msg "Configuring LabKey"
   step_configure_labkey
 
-  console_msg "Configuring Tomcat Service"
-  step_tomcat_service
+  console_msg "Configuring Embedded Tomcat Service"
+  step_tomcat_service_embedded
+
+  console_msg "Configuring Standard Tomcat Service"
+  step_tomcat_service_standard
 
   console_msg "Configuring Alt Files Root Link"
   step_alt_files_link
