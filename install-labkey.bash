@@ -127,7 +127,7 @@ function step_default_envs() {
 
   # set default heap min/max to 50% (w/ <= 8G) or 75% of total mem
   DEFAULT_JAVA_HEAP_SIZE="$(
-    total="$(free -m  | grep ^Mem | tr -s ' ' | cut -d ' ' -f 2)"
+    total="$(free -m | grep ^Mem | tr -s ' ' | cut -d ' ' -f 2)"
 
     if [ "$total" -ge 8192 ]; then
       heap_modifier='75'
@@ -135,7 +135,7 @@ function step_default_envs() {
       heap_modifier='50'
     fi
 
-    echo -n "$(( total * heap_modifier / 100 ))M"
+    echo -n "$((total * heap_modifier / 100))M"
   )"
 
   JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-${DEFAULT_JAVA_HEAP_SIZE}}"
