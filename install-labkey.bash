@@ -124,7 +124,21 @@ function step_default_envs() {
 
   # Java env vars
   ADOPTOPENJDK_VERSION="${ADOPTOPENJDK_VERSION:-adoptopenjdk-16-hotspot}"
-  JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-4G}"
+
+  # set default heap min/max to 50% (w/ <= 8G) or 75% of total mem
+  DEFAULT_JAVA_HEAP_SIZE="$(
+    total="$(free -m  | grep ^Mem | tr -s ' ' | cut -d ' ' -f 2)"
+
+    if [ "$total" -ge 8192 ]; then
+      heap_modifier='75'
+    else
+      heap_modifier='50'
+    fi
+
+    echo -n "$(( total * heap_modifier / 100 ))M"
+  )"
+
+  JAVA_HEAP_SIZE="${JAVA_HEAP_SIZE:-${DEFAULT_JAVA_HEAP_SIZE}}"
 
   # LabKey env vars
   LABKEY_COMPANY_NAME="${LABKEY_COMPANY_NAME:-LabKey}"
