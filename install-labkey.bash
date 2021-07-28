@@ -72,7 +72,7 @@ function platform() {
   if ! _os_release 'ID'; then
     backup_platform="$(_lsb_release 'i')"
 
-    if [[ "$backup_platform" == 'amazon' ]]; then
+    if [[ $backup_platform == 'amazon' ]]; then
       echo 'amzn'
     else
       echo "$backup_platform"

@@ -30,17 +30,17 @@ function lsb_release() {
   local mock_platform="${MOCK_PLATFORM:-plan9}"
 
   case "_${mock_platform}" in
-    _plan9)
-      case "_${@}" in
-      _*i*) echo 'Plan9' ;;
-      _*r*) echo '4' ;;
-      esac
+  _plan9)
+    case "_${@}" in
+    _*i*) echo 'Plan9' ;;
+    _*r*) echo '4' ;;
+    esac
     ;;
-    _amzn)
-      case "_${@}" in
-      _*i*) echo 'Amazon' ;;
-      _*r*) echo '2' ;;
-      esac
+  _amzn)
+    case "_${@}" in
+    _*i*) echo 'Amazon' ;;
+    _*r*) echo '2' ;;
+    esac
     ;;
   esac
 }
