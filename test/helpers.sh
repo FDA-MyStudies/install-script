@@ -16,31 +16,31 @@
 # limitations under the License.
 #
 
-function test_platform_lsb_release() {
-  assertEquals \
-    'Unexpected platform name.' \
-    'plan9' \
-    "$(platform)"
+function uuidgen() {
+  echo 'BEEFBEEF-BEEF-1234-BEEF-BEEFBEEFBEEF'
 }
 
-function test_platform_version_lsb_release() {
-  assertEquals \
-    'Unexpected platform version.' \
-    '4' \
-    "$(platform_version)"
+function openssl() {
+  printf '%s\n%s' \
+    'FzPEJL8z5dV4LnJj1Nu+2mFGtZCkvDkWpLIJpWs4lwfiq/tpUJGpNk9OkNkm1gfX' \
+    'x1h+E48FidB8h7ijT/MJUw=='
 }
 
-function oneTimeSetUp() {
-  export LABKEY_INSTALL_SKIP_MAIN=1
+function lsb_release() {
+  local mock_platform="${MOCK_PLATFORM:-plan9}"
 
-  export MOCK_PLATFORM='plan9'
-
-  # shellcheck source=test/helpers.sh
-  source test/helpers.sh
-
-  # shellcheck disable=SC1091
-  source install-labkey.bash
+  case "_${mock_platform}" in
+    _plan9)
+      case "_${@}" in
+      _*i*) echo 'Plan9' ;;
+      _*r*) echo '4' ;;
+      esac
+    ;;
+    _amzn)
+      case "_${@}" in
+      _*i*) echo 'Amazon' ;;
+      _*r*) echo '2' ;;
+      esac
+    ;;
+  esac
 }
-
-# shellcheck disable=SC1091
-. test/shunit2
