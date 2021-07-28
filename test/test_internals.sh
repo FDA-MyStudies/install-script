@@ -30,7 +30,7 @@ function test_console_msg() {
     "Hello World!"
 }
 
-oneTimeSetUp() {
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
 
   # shellcheck disable=SC1091

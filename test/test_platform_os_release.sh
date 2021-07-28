@@ -30,7 +30,7 @@ function test_platform_version_os_release() {
     "$(platform_version)"
 }
 
-oneTimeSetUp() {
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
 
   echo '

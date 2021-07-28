@@ -30,7 +30,7 @@ function test_platform_version_lsb_release() {
     "$(platform_version)"
 }
 
-oneTimeSetUp() {
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
 
   # mock lsb_release

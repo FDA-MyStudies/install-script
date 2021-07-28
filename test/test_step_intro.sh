@@ -23,7 +23,7 @@ function test_intro() {
     "CLI Install Script"
 }
 
-oneTimeSetUp() {
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
 
   # shellcheck disable=SC1091
