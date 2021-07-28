@@ -25,7 +25,7 @@ set -euo pipefail
 
 function main() {
 
-  find ./test/ -type f -name '*.sh' -not -name "$(basename "$0")" -print0 |
+  find ./test/ -type f -name 'test_*.sh' -not -name "$(basename "$0")" -print0 |
     xargs -n1 -0 bash
 
 }
