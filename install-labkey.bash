@@ -67,8 +67,16 @@ function _lsb_release() {
 }
 
 function platform() {
+  local backup_platform
+
   if ! _os_release 'ID'; then
-    _lsb_release 'i'
+    backup_platform="$(_lsb_release 'i')"
+
+    if [[ "$backup_platform" == 'amazon' ]]; then
+      echo 'amzn'
+    else
+      echo "$backup_platform"
+    fi
   fi | xargs
 }
 
