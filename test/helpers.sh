@@ -16,6 +16,9 @@
 # limitations under the License.
 #
 
+# disable strict mode for testing :/
+set +euo pipefail
+
 function uuidgen() {
   echo 'BEEFBEEF-BEEF-1234-BEEF-BEEFBEEFBEEF'
 }
