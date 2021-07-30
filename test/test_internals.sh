@@ -16,28 +16,22 @@
 # limitations under the License.
 #
 
-function test_platform_os_release() {
+function test_step_skipping() {
   assertEquals \
-    'Unexpected platform name.' \
-    'plan9' \
-    "$(platform)"
+    'Intro not skipped despite provided ENV.' \
+    "skipping 'intro' step" \
+    "$(LABKEY_INSTALL_SKIP_INTRO_STEP=1 step_intro)"
 }
 
-function test_platform_version_os_release() {
-  assertEquals \
-    'Unexpected platform version.' \
-    '4' \
-    "$(platform_version)"
+function test_console_msg() {
+  assertContains \
+    "Testing console_message function for Hello World!" \
+    "$(console_msg 'Hello World!')" \
+    "Hello World!"
 }
 
-oneTimeSetUp() {
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
-
-  echo '
-    ID=Plan9
-    ID_LIKE=Nix
-    VERSION_ID="4"
-  ' | sed -e 's/^\ \{2,\}//g' >"${SHUNIT_TMPDIR}/os-release"
 
   # shellcheck disable=SC1091
   source install-labkey.bash

@@ -16,18 +16,40 @@
 # limitations under the License.
 #
 
-function test_intro() {
+function test_non_default_app_home() {
+  # shellcheck disable=SC2016
   assertContains \
-    "Intro didn't mention its own name." \
-    "$(step_intro)" \
-    "CLI Install Script"
+    'non-default $LABKEY_APP_HOME not created' \
+    "$(step_create_required_paths)" \
+    'creating /opt/yekbal'
 }
 
-oneTimeSetUp() {
+function test_non_default_install_home() {
+  # shellcheck disable=SC2016
+  assertContains \
+    'non-default $LABKEY_INSTALL_HOME not created' \
+    "$(step_create_required_paths)" \
+    'creating /opt/yekbal/labkey'
+}
+
+function oneTimeSetUp() {
   export LABKEY_INSTALL_SKIP_MAIN=1
+
+  # shellcheck source=test/helpers.sh
+  source test/helpers.sh
 
   # shellcheck disable=SC1091
   source install-labkey.bash
+}
+
+function setUp() {
+  export LABKEY_APP_HOME='/opt/yekbal'
+
+  step_default_envs
+}
+
+function tearDown() {
+  rm -rf '/opt/yekbal'
 }
 
 # shellcheck disable=SC1091

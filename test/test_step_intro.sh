@@ -16,18 +16,19 @@
 # limitations under the License.
 #
 
-if [ -n "${DEBUG:-}" ]; then
-  set -x
-fi
-
-# bash strict mode
-set -euo pipefail
-
-function main() {
-
-  find ./test/ -type f -name 'test_*.sh' -not -name "$(basename "$0")" -print0 |
-    xargs -n1 -0 bash
-
+function test_intro() {
+  assertContains \
+    "Intro didn't mention its own name." \
+    "$(step_intro)" \
+    "CLI Install Script"
 }
 
-main
+function oneTimeSetUp() {
+  export LABKEY_INSTALL_SKIP_MAIN=1
+
+  # shellcheck disable=SC1091
+  source install-labkey.bash
+}
+
+# shellcheck disable=SC1091
+. test/shunit2

@@ -16,18 +16,31 @@
 # limitations under the License.
 #
 
-if [ -n "${DEBUG:-}" ]; then
-  set -x
-fi
-
-# bash strict mode
-set -euo pipefail
-
-function main() {
-
-  find ./test/ -type f -name 'test_*.sh' -not -name "$(basename "$0")" -print0 |
-    xargs -n1 -0 bash
-
+function test_platform_lsb_release() {
+  assertEquals \
+    'Unexpected platform name.' \
+    'plan9' \
+    "$(platform)"
 }
 
-main
+function test_platform_version_lsb_release() {
+  assertEquals \
+    'Unexpected platform version.' \
+    '4' \
+    "$(platform_version)"
+}
+
+function oneTimeSetUp() {
+  export LABKEY_INSTALL_SKIP_MAIN=1
+
+  export MOCK_PLATFORM='plan9'
+
+  # shellcheck source=test/helpers.sh
+  source test/helpers.sh
+
+  # shellcheck disable=SC1091
+  source install-labkey.bash
+}
+
+# shellcheck disable=SC1091
+. test/shunit2
