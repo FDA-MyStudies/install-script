@@ -510,6 +510,6 @@ function main() {
 }
 
 # Main function called here
-if [ -z "${WCP_INSTALL_SKIP_MAIN:-}" ]; then
+if [ -z "${SKIP_MAIN:-}" ]; then
   main
 fi

@@ -31,7 +31,7 @@ function test_platform_version_os_release() {
 }
 
 function oneTimeSetUp() {
-  export LABKEY_INSTALL_SKIP_MAIN=1
+  export SKIP_MAIN=1
 
   echo '
     ID=Plan9

@@ -1241,6 +1241,6 @@ function main() {
 }
 
 # Main function called here
-if [ -z "${LABKEY_INSTALL_SKIP_MAIN:-}" ]; then
+if [ -z "${SKIP_MAIN:-}" ]; then
   main
 fi

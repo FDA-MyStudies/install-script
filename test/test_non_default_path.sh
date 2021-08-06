@@ -33,7 +33,7 @@ function test_non_default_install_home() {
 }
 
 function oneTimeSetUp() {
-  export LABKEY_INSTALL_SKIP_MAIN=1
+  export SKIP_MAIN=1
 
   # shellcheck source=test/helpers.sh
   source test/helpers.sh
