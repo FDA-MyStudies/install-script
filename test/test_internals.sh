@@ -20,7 +20,10 @@ function test_step_skipping() {
   assertEquals \
     'Intro not skipped despite provided ENV.' \
     "skipping 'intro' step" \
-    "$(export ${TEST_PRODUCT^^}_INSTALL_SKIP_INTRO_STEP=1; step_intro)"
+    "$(
+      export "${TEST_PRODUCT^^}_INSTALL_SKIP_INTRO_STEP=1"
+      step_intro
+    )"
 }
 
 function test_console_msg() {
