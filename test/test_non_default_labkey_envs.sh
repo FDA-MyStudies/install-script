@@ -18,6 +18,14 @@
 
 # verify the set LABKEY_VERSION made it into the dist url
 function test_non_default_labkey_version_url() {
+
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  else
+    step_startup_properties
+  fi
+
   # shellcheck disable=SC2016
   assertContains \
     'non-default $LABKEY_VERSION not in $LABKEY_DIST_URL' \
@@ -26,7 +34,15 @@ function test_non_default_labkey_version_url() {
 }
 
 # verify the set LABKEY_COMPANY_NAME made it into the startup props
-function test_non_default_company_prop() {
+function test_non_default_labkey_company_prop() {
+
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  else
+    step_startup_properties
+  fi
+
   # shellcheck disable=SC2016
   assertNotEquals \
     'non-default $LABKEY_COMPANY_NAME not in startup properties' \
@@ -50,7 +66,6 @@ function oneTimeSetUp() {
 
   step_default_envs
   step_create_required_paths >/dev/null 2>&1
-  step_startup_properties
 }
 
 # shellcheck disable=SC1091

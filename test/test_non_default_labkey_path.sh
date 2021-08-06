@@ -17,6 +17,11 @@
 #
 
 function test_non_default_app_home() {
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  fi
+
   # shellcheck disable=SC2016
   assertContains \
     'non-default $LABKEY_APP_HOME not created' \
@@ -25,6 +30,11 @@ function test_non_default_app_home() {
 }
 
 function test_non_default_install_home() {
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  fi
+
   # shellcheck disable=SC2016
   assertContains \
     'non-default $LABKEY_INSTALL_HOME not created' \
