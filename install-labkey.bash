@@ -48,14 +48,8 @@ function _skip_step() {
 }
 
 function _os_release() {
-  local release_dir='/etc'
-
-  if [ -n "${SHUNIT_VERSION:-}" ]; then
-    release_dir="${SHUNIT_TMPDIR:-}"
-  fi
-
-  grep -s "^${1}=" "${release_dir}/os-release" | cut -d'=' -f2- |
-    tr -d '\n' | xargs | tr '[:upper:]' '[:lower:]'
+  grep -s "^${1}=" "${SHUNIT_TMPDIR:-/etc}/os-release" | cut -d'=' -f2- \
+    | tr -d '\n' | tr -d '"' | tr -d \' | xargs | tr '[:upper:]' '[:lower:]'
 }
 
 function _lsb_release() {
@@ -67,22 +61,34 @@ function _lsb_release() {
 }
 
 function platform() {
-  local backup_platform
+  local primary
+  local secondary
 
-  if ! _os_release 'ID'; then
-    backup_platform="$(_lsb_release 'i')"
+  primary="$(_os_release 'ID' || true)"
+  secondary="$(_lsb_release 'i')"
 
-    if [[ $backup_platform == 'amazon' ]]; then
+  if [ -n "$primary" ]; then
+    echo "$primary"
+  else
+    if [[ $secondary == 'amazon' ]]; then
       echo 'amzn'
     else
-      echo "$backup_platform"
+      echo "$secondary"
     fi
   fi | xargs
 }
 
 function platform_version() {
-  if ! _os_release 'VERSION_ID'; then
-    _lsb_release 'r'
+  local primary
+  local secondary
+
+  primary="$(_os_release 'VERSION_ID' || true)"
+  secondary="$(_lsb_release 'r')"
+
+  if [ -n "$primary" ]; then
+    echo "$primary"
+  else
+    echo "$secondary"
   fi | xargs
 }
 
@@ -104,7 +110,6 @@ function create_req_dir() {
       echo "       required directory $1 exists..."
     fi
   fi
-
 }
 
 #
