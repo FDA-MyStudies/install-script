@@ -32,7 +32,7 @@ fi
 #
 # "Global" variables
 #
-#PRODUCT='WCP Server'
+PRODUCT='WCP Server'
 
 function src_labkey_install_script() {
   LABKEY_INSTALL_SCRIPT_URL="${LABKEY_INSTALL_SCRIPT_URL:-}"
@@ -47,7 +47,7 @@ function step_wcp_intro() {
 
   printf '%s\n\n%s\n\n' \
     "
-    WCP CLI Install Script
+    ${PRODUCT} CLI Install Script
   " \
     '
     #     #  #####  ######      #####
