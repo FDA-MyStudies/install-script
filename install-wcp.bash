@@ -34,12 +34,82 @@ fi
 #
 PRODUCT='WCP Server'
 
-function src_labkey_install_script() {
-  LABKEY_INSTALL_SCRIPT_URL="${LABKEY_INSTALL_SCRIPT_URL:-}"
-  # shellcheck source=./install-labkey.bash
-  # shellcheck disable=SC1091
-  source <(curl -s "${LABKEY_INSTALL_SCRIPT_URL}")
+#
+# Internal Utility Functions
+#
+function _skip_step() {
+  local step_name="$1"
 
+  if ! eval "[ -z \"\${LABKEY_INSTALL_SKIP_${step_name^^}_STEP:-}\" ]"; then
+    echo "skipping '${step_name}' step"
+  else
+    return 1
+  fi
+}
+
+function _os_release() {
+  grep -s "^${1}=" "${SHUNIT_TMPDIR:-/etc}/os-release" | cut -d'=' -f2- \
+    | tr -d '\n' | tr -d '"' | tr -d \' | xargs | tr '[:upper:]' '[:lower:]'
+}
+
+function _lsb_release() {
+  local flag="$1"
+
+  if command -v lsb_release >/dev/null 2>&1; then
+    lsb_release -s "-${flag}" | tr '[:upper:]' '[:lower:]'
+  fi
+}
+
+function platform() {
+  local primary
+  local secondary
+
+  primary="$(_os_release 'ID' || true)"
+  secondary="$(_lsb_release 'i')"
+
+  if [ -n "$primary" ]; then
+    echo "$primary"
+  else
+    if [[ $secondary == 'amazon' ]]; then
+      echo 'amzn'
+    else
+      echo "$secondary"
+    fi
+  fi | xargs
+}
+
+function platform_version() {
+  local primary
+  local secondary
+
+  primary="$(_os_release 'VERSION_ID' || true)"
+  secondary="$(_lsb_release 'r')"
+
+  if [ -n "$primary" ]; then
+    echo "$primary"
+  else
+    echo "$secondary"
+  fi | xargs
+}
+
+function console_msg() {
+  bold=$'\033[1m'
+  normal=$'\033[0m'
+  echo "${normal}---------${bold} $1 ${normal}---------"
+}
+
+function create_req_dir() {
+  echo "     checking to see if required directory $1 exists..."
+  if [ "$1" == "" ]; then
+    echo "     ERROR - you must supply a directory name"
+  else
+    if [ ! -d "$1" ]; then
+      echo "     creating $1"
+      mkdir -p "$1"
+    else
+      echo "       required directory $1 exists..."
+    fi
+  fi
 }
 
 function step_wcp_intro() {
@@ -471,8 +541,8 @@ function step_wcp_outro() {
 # Main loop
 #
 function main() {
-  # This function is required as several install steps are common between install types
-  src_labkey_install_script
+  step_wcp_intro
+
 
   step_wcp_intro
   console_msg "Importing default environment variables from install-labkey.bash"
