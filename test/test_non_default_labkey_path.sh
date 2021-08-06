@@ -35,11 +35,12 @@ function test_non_default_install_home() {
 function oneTimeSetUp() {
   export SKIP_MAIN=1
 
+  # shellcheck disable=SC1091,SC1090
+  source "install-${TEST_PRODUCT:-labkey}.bash"
+
   # shellcheck source=test/helpers.sh
   source test/helpers.sh
 
-  # shellcheck disable=SC1091
-  source install-labkey.bash
 }
 
 function setUp() {

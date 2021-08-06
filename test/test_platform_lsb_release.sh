@@ -33,13 +33,13 @@ function test_platform_version_lsb_release() {
 function oneTimeSetUp() {
   export SKIP_MAIN=1
 
+  # shellcheck disable=SC1091,SC1090
+  source "install-${TEST_PRODUCT:-labkey}.bash"
+
   export MOCK_PLATFORM='plan9'
 
   # shellcheck source=test/helpers.sh
   source test/helpers.sh
-
-  # shellcheck disable=SC1091
-  source install-labkey.bash
 }
 
 # shellcheck disable=SC1091

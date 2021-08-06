@@ -20,7 +20,7 @@ function test_step_skipping() {
   assertEquals \
     'Intro not skipped despite provided ENV.' \
     "skipping 'intro' step" \
-    "$(LABKEY_INSTALL_SKIP_INTRO_STEP=1 step_intro)"
+    "$(export ${TEST_PRODUCT^^}_INSTALL_SKIP_INTRO_STEP=1; step_intro)"
 }
 
 function test_console_msg() {
@@ -33,8 +33,11 @@ function test_console_msg() {
 function oneTimeSetUp() {
   export SKIP_MAIN=1
 
-  # shellcheck disable=SC1091
-  source install-labkey.bash
+  # shellcheck disable=SC1091,SC1090
+  source "install-${TEST_PRODUCT:-labkey}.bash"
+
+  # shellcheck source=test/helpers.sh
+  source test/helpers.sh
 }
 
 # shellcheck disable=SC1091
