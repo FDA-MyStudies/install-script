@@ -47,3 +47,20 @@ function lsb_release() {
     ;;
   esac
 }
+
+function _mock_platform() {
+  case "_${1:-plan9}" in
+  _plan9)
+    echo '
+        ID=Plan9
+        VERSION_ID="4"
+      ' | sed -e 's/^\ \{2,\}//g' >"${SHUNIT_TMPDIR}/os-release"
+    ;;
+  _amzn)
+    echo '
+        ID=amzn
+        VERSION_ID="2"
+      ' | sed -e 's/^\ \{2,\}//g' >"${SHUNIT_TMPDIR}/os-release"
+    ;;
+  esac
+}
