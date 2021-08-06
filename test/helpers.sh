@@ -30,9 +30,7 @@ function openssl() {
 }
 
 function lsb_release() {
-  local mock_platform="${MOCK_PLATFORM:-plan9}"
-
-  case "_${mock_platform}" in
+  case "_${MOCK_PLATFORM:-plan9}" in
   _plan9)
     case "_${@}" in
     _*i*) echo 'Plan9' ;;
