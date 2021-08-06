@@ -42,8 +42,8 @@ function _skip_step() {
 }
 
 function _os_release() {
-  grep -s "^${1}=" "${SHUNIT_TMPDIR:-/etc}/os-release" | cut -d'=' -f2- \
-    | tr -d '\n' | tr -d '"' | tr -d \' | xargs | tr '[:upper:]' '[:lower:]'
+  grep -s "^${1}=" "${SHUNIT_TMPDIR:-/etc}/os-release" | cut -d'=' -f2- |
+    tr -d '\n' | tr -d '"' | tr -d \' | xargs | tr '[:upper:]' '[:lower:]'
 }
 
 function _lsb_release() {
