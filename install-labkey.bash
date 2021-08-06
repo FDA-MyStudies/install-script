@@ -23,12 +23,6 @@ fi
 # bash strict mode
 set -euo pipefail
 
-# must be root or launch script with sudo
-if [[ $(whoami) != root ]]; then
-  echo Please run this script as root or using sudo
-  exit
-fi
-
 #
 # "Global" variables
 #
@@ -127,6 +121,14 @@ function step_intro() {
      ||  |  _ |_ |/ _
     (__) |_(_||_)|\(/_\/
                       /'
+}
+
+function step_check_if_root() {
+  # must be root or launch script with sudo
+  if [[ $(whoami) != root ]]; then
+    echo Please run this script as root or using sudo
+    return 1
+  fi
 }
 
 function step_default_envs() {
@@ -1195,6 +1197,8 @@ function step_outro() {
 function main() {
 
   step_intro
+
+  step_check_if_root
 
   console_msg "Configuring default variables"
   step_default_envs
