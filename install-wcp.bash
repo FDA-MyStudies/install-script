@@ -34,7 +34,7 @@ PRODUCT='WCP Server'
 function _skip_step() {
   local step_name="$1"
 
-  if ! eval "[ -z \"\${LABKEY_INSTALL_SKIP_${step_name^^}_STEP:-}\" ]"; then
+  if ! eval "[ -z \"\${WCP_INSTALL_SKIP_${step_name^^}_STEP:-}\" ]"; then
     echo "skipping '${step_name}' step"
   else
     return 1
