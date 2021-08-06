@@ -48,7 +48,7 @@ jobs:
           SHELLCHECK_OPTS: -x install-labkey.bash -x test/helpers.sh
 
   labkey-test:
-    name: labkey-lint
+    name: labkey-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -76,7 +76,7 @@ jobs:
           SHELLCHECK_OPTS: -x install-wcp.bash -x test/helpers.sh
 
   wcp-test:
-    name: wcp-lint
+    name: wcp-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
