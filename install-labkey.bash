@@ -1174,7 +1174,7 @@ function step_alt_files_link() {
   fi
 }
 
-function step_start_service() {
+function step_start_labkey() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   # Enables the tomcat service and starts labkey
   sudo systemctl enable tomcat_lk.service
@@ -1244,7 +1244,7 @@ function main() {
   console_msg "Configuring Alt Files Root Link"
   step_alt_files_link
 
-  step_start_service
+  step_start_labkey
 
   step_outro
 }

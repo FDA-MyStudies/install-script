@@ -106,7 +106,7 @@ function create_req_dir() {
   fi
 }
 
-function step_intro() {
+function step_wcp_intro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   printf '%s\n\n%s\n\n' \
@@ -133,7 +133,7 @@ function step_check_if_root() {
   fi
 }
 
-function step_default_envs() {
+function step_wcp_default_envs() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   WCP_APP_ENV="${WCP_APP_ENV:-uat}"
@@ -162,7 +162,7 @@ function step_default_envs() {
   MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9!@#%' | fold -w 32 | head -n1)}"
 }
 
-function step_create_required_paths() {
+function step_wcp_create_required_paths() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   # directories needed for tomcat service
   create_req_dir "${LABKEY_APP_HOME}"
@@ -176,7 +176,7 @@ function step_create_required_paths() {
 
 }
 
-function step_create_app_properties() {
+function step_create_wcp_properties() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   if [ ! -f "${TOMCAT_INSTALL_HOME}/conf/wcp.properties" ]; then
@@ -463,7 +463,7 @@ function step_mysql_config() {
 
 }
 
-function step_download() {
+function step_download_wcp_dist() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   local ret=0
 
@@ -521,14 +521,14 @@ function step_initialize_wcp_database() {
 
 }
 
-function step_start_service() {
+function step_start_wcp() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   # Enables the tomcat service and starts wcp
   sudo systemctl enable tomcat_lk.service
   sudo systemctl start tomcat_lk.service
 }
 
-function step_outro() {
+function step_wcp_outro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   echo "
@@ -543,13 +543,15 @@ function step_outro() {
 # Main loop
 #
 function main() {
-  step_intro
+  step_wcp_intro
 
   step_check_if_root
 
+  step_wcp_intro
   console_msg "Importing default environment variables from install-labkey.bash"
   # use default envs from labkey-install script
   step_default_envs
+  step_wcp_default_envs
   console_msg "Installing Operating System dependencies"
   step_os_prereqs
   console_msg "Creating required paths"
@@ -562,7 +564,7 @@ function main() {
   console_msg "Configuring Standard Tomcat Service"
   step_tomcat_service_standard
   console_msg "Creating wcp.properties"
-  step_create_app_properties
+  step_create_wcp_properties
   console_msg "Creating tomcat context.xml"
   step_create_context_xml
   console_msg "Creating fdaResources.xml"
@@ -572,11 +574,11 @@ function main() {
   console_msg "Configuring MySQL"
   step_mysql_config
   console_msg "Downloading WCP distribution"
-  step_download
+  step_download_wcp_dist
   console_msg "Initializing the WCP Database"
   step_initialize_wcp_database
   console_msg "Starting WCP Services"
-  step_start_service
+  step_start_wcp
 
 }
 
