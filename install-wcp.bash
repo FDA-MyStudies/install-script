@@ -32,7 +32,7 @@ LABKEY_INSTALL_SCRIPT_PATH="${LABKEY_INSTALL_SCRIPT_PATH:-./install-labkey.bash}
 # required to "import" functions & common install steps
 # shellcheck source=./install-labkey.bash
 # shellcheck disable=SC1091
-source "${LABKEY_INSTALL_SCRIPT_PATH}"
+SKIP_MAIN=1 source "${LABKEY_INSTALL_SCRIPT_PATH}"
 
 #
 # Internal Utility Functions
