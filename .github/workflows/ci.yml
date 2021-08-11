@@ -13,22 +13,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    name: lint
+  self:
+    name: lint actions config
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      # https://github.com/luizm/action-sh-checker
-      - name: sh-checker
-        uses: luizm/action-sh-checker@v0.3.0
-        with:
-          sh_checker_exclude: test/shunit2
-          sh_checker_comment: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHFMT_OPTS: -s -i 2
-          SHELLCHECK_OPTS: -x install-labkey.bash -x test/helpers.sh
 
       # https://github.com/karancode/yamllint-github-action
       - name: yamllint
@@ -41,8 +30,25 @@ jobs:
         env:
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test:
-    name: test
+  labkey-lint:
+    name: labkey-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # https://github.com/luizm/action-sh-checker
+      - name: shfmt & shellcheck
+        uses: luizm/action-sh-checker@v0.3.0
+        with:
+          sh_checker_exclude: test/shunit2 install-wcp.bash
+          sh_checker_comment: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: -s -i 2
+          SHELLCHECK_OPTS: -x install-labkey.bash -x test/helpers.sh
+
+  labkey-test:
+    name: labkey-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -50,4 +56,32 @@ jobs:
       - name: shunit2
         uses: sudo-bot/action-shunit2@latest
         with:
-          cli: "test/runner.sh"
+          cli: test/runner.sh labkey
+
+  wcp-lint:
+    name: wcp-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # https://github.com/luizm/action-sh-checker
+      - name: shfmt & shellcheck
+        uses: luizm/action-sh-checker@v0.3.0
+        with:
+          sh_checker_exclude: test/shunit2 install-wcp.bash
+          sh_checker_comment: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: -s -i 2
+          SHELLCHECK_OPTS: -x install-wcp.bash -x test/helpers.sh
+
+  wcp-test:
+    name: wcp-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: shunit2
+        uses: sudo-bot/action-shunit2@latest
+        with:
+          cli: test/runner.sh wcp

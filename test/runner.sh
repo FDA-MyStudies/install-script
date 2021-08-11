@@ -23,11 +23,14 @@ fi
 # bash strict mode
 set -euo pipefail
 
+# shellcheck disable=SC2120
 function main() {
+
+  export TEST_PRODUCT="${1:-labkey}"
 
   find ./test/ -type f -name 'test_*.sh' -not -name "$(basename "$0")" -print0 |
     xargs -n1 -0 bash
 
 }
 
-main
+main "$@"

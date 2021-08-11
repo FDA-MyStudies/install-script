@@ -31,16 +31,15 @@ function test_platform_version_os_release() {
 }
 
 function oneTimeSetUp() {
-  export LABKEY_INSTALL_SKIP_MAIN=1
+  export SKIP_MAIN=1
 
-  echo '
-    ID=Plan9
-    ID_LIKE=Nix
-    VERSION_ID="4"
-  ' | sed -e 's/^\ \{2,\}//g' >"${SHUNIT_TMPDIR}/os-release"
+  # shellcheck disable=SC1091,SC1090
+  source "install-${TEST_PRODUCT:-labkey}.bash"
 
-  # shellcheck disable=SC1091
-  source install-labkey.bash
+  # shellcheck source=test/helpers.sh
+  source test/helpers.sh
+
+  _mock_platform 'plan9'
 }
 
 # shellcheck disable=SC1091

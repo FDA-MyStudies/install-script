@@ -17,6 +17,13 @@
 #
 
 function test_non_default_app_home() {
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  else
+    step_default_envs
+  fi
+
   # shellcheck disable=SC2016
   assertContains \
     'non-default $LABKEY_APP_HOME not created' \
@@ -25,6 +32,13 @@ function test_non_default_app_home() {
 }
 
 function test_non_default_install_home() {
+  # skip on wcp
+  if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
+    startSkipping
+  else
+    step_default_envs
+  fi
+
   # shellcheck disable=SC2016
   assertContains \
     'non-default $LABKEY_INSTALL_HOME not created' \
@@ -33,19 +47,18 @@ function test_non_default_install_home() {
 }
 
 function oneTimeSetUp() {
-  export LABKEY_INSTALL_SKIP_MAIN=1
+  export SKIP_MAIN=1
+
+  # shellcheck disable=SC1091,SC1090
+  source "install-${TEST_PRODUCT:-labkey}.bash"
 
   # shellcheck source=test/helpers.sh
   source test/helpers.sh
 
-  # shellcheck disable=SC1091
-  source install-labkey.bash
 }
 
 function setUp() {
   export LABKEY_APP_HOME='/opt/yekbal'
-
-  step_default_envs
 }
 
 function tearDown() {
