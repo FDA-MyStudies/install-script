@@ -89,7 +89,9 @@ function step_wcp_default_envs() {
   MYSQL_USER="${MYSQL_USER:-app}"
   MYSQL_SVR_LOCAL="${MYSQL_SVR_LOCAL:-FALSE}"
   MYSQL_PORT="${MYSQL_PORT:-3306}"
-  # Generate password if none is provided - mysql defaults require strong passwords
+
+  # both passwords below must me MySQL's default complexity requirements
+  # Generate password if none is provided
   MYSQL_PASSWORD="${MYSQL_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
   # shellcheck disable=SC2002
   MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9!@#%' | fold -w 32 | head -n1)}"
