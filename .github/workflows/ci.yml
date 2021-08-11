@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-        # https://github.com/karancode/yamllint-github-action
+      # https://github.com/karancode/yamllint-github-action
       - name: yamllint
         uses: karancode/yamllint-github-action@master
         with:
