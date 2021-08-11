@@ -20,6 +20,8 @@ function test_non_default_app_home() {
   # skip on wcp
   if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
     startSkipping
+  else
+    step_default_envs
   fi
 
   # shellcheck disable=SC2016
@@ -33,6 +35,8 @@ function test_non_default_install_home() {
   # skip on wcp
   if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
     startSkipping
+  else
+    step_default_envs
   fi
 
   # shellcheck disable=SC2016
@@ -55,8 +59,6 @@ function oneTimeSetUp() {
 
 function setUp() {
   export LABKEY_APP_HOME='/opt/yekbal'
-
-  step_default_envs
 }
 
 function tearDown() {

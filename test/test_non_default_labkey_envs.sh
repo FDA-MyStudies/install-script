@@ -19,11 +19,13 @@
 # verify the set LABKEY_VERSION made it into the dist url
 function test_non_default_labkey_version_url() {
 
+  export LABKEY_VERSION='infinite'
+
   # skip on wcp
   if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
     startSkipping
   else
-    step_startup_properties
+    step_default_envs
   fi
 
   # shellcheck disable=SC2016
@@ -36,20 +38,24 @@ function test_non_default_labkey_version_url() {
 # verify the set LABKEY_COMPANY_NAME made it into the startup props
 function test_non_default_labkey_company_prop() {
 
+  export LABKEY_COMPANY_NAME='Megadodo Publications'
+
   # skip on wcp
   if [[ ${TEST_PRODUCT:-} == 'wcp' ]]; then
     startSkipping
   else
+    step_default_envs
+    step_create_required_paths >/dev/null 2>&1
     step_startup_properties
   fi
 
   # shellcheck disable=SC2016
-  assertNotEquals \
+  assertContains \
     'non-default $LABKEY_COMPANY_NAME not in startup properties' \
-    '' \
     "$(
       grep -s -r 'Megadodo Publications' "$LABKEY_STARTUP_DIR" || true
-    )"
+    )" \
+    'Megadodo Publications'
 }
 
 function oneTimeSetUp() {
@@ -60,12 +66,6 @@ function oneTimeSetUp() {
 
   # shellcheck source=test/helpers.sh
   source test/helpers.sh
-
-  export LABKEY_VERSION='infinite'
-  export LABKEY_COMPANY_NAME='Megadodo Publications'
-
-  step_default_envs
-  step_create_required_paths >/dev/null 2>&1
 }
 
 # shellcheck disable=SC1091
