@@ -66,14 +66,6 @@ function step_intro() {
 
 }
 
-function step_check_if_root() {
-  # must be root or launch script with sudo
-  if [[ $(whoami) != root ]]; then
-    echo Please run this script as root or using sudo
-    return 1
-  fi
-}
-
 function step_wcp_default_envs() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
