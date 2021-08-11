@@ -41,7 +41,7 @@ function _skip_step() {
   fi
 }
 
-function step_wcp_intro() {
+function step_intro() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   printf '%s\n\n%s\n\n' \
@@ -478,15 +478,15 @@ function step_wcp_outro() {
 # Main loop
 #
 function main() {
-  step_wcp_intro
+  step_intro
 
   step_check_if_root
 
-  step_wcp_intro
   console_msg "Importing default environment variables from install-labkey.bash"
   # use default envs from labkey-install script
   step_default_envs
   step_wcp_default_envs
+
   console_msg "Installing Operating System dependencies"
   step_os_prereqs
   console_msg "Creating required paths"
