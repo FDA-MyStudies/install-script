@@ -92,8 +92,29 @@ function step_wcp_default_envs() {
 
   # both passwords below must me MySQL's default complexity requirements
   # Generate password if none is provided
-  MYSQL_PASSWORD="${MYSQL_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
-  MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(head -c 64 /dev/urandom | tr -dc 'a-zA-Z0-9!@#%' | fold -w 32 | head -n1)}"
+  MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
+  MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
+}
+
+function step_wcp_required_envs() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  local ret=0
+
+  for key in \
+    MYSQL_PASSWORD \
+    MYSQL_ROOT_PASSWORD \
+  ; do
+    local value
+    value="$(env | grep -s "$key" || true)"
+
+    if [ -z "${value%%=*}" ]; then
+      echo "value required for \$${key}"
+      export ret=1
+    fi
+  done
+
+  return "$ret"
 }
 
 function step_wcp_create_required_paths() {
@@ -275,6 +296,9 @@ FDARESOURCE_HERE
 
 function step_mysql_config() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  echo "WARNING: \$MYSQL_PASSWORD & \$MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe"
+  echo "WARNING: MySQL password complexity requirements set to \"MEDIUM\" by default"
 
   case "_$(platform)" in
   _amzn)
@@ -485,6 +509,8 @@ function main() {
   # use default envs from labkey-install script
   step_default_envs
   step_wcp_default_envs
+
+  step_wcp_required_envs
 
   console_msg "Installing Operating System dependencies"
   step_os_prereqs
