@@ -93,8 +93,7 @@ function step_wcp_default_envs() {
   # both passwords below must me MySQL's default complexity requirements
   # Generate password if none is provided
   MYSQL_PASSWORD="${MYSQL_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
-  # shellcheck disable=SC2002
-  MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9!@#%' | fold -w 32 | head -n1)}"
+  MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-$(head -c 64 /dev/urandom | tr -dc 'a-zA-Z0-9!@#%' | fold -w 32 | head -n1)}"
 }
 
 function step_wcp_create_required_paths() {
