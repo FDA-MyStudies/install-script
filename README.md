@@ -296,8 +296,8 @@ Applies only to `install-wcp.bash`
 | MYSQL_USER                | MySQL user's username                                                                                                                | app                                                                                                          | yes      |
 | MYSQL_SVR_LOCAL           | Flag to trigger install/config of local MySQL server - "TRUE" or "FALSE"                                                             | FALSE                                                                                                        | yes      |
 | MYSQL_PORT                | MySQL TCP port                                                                                                                       | 3306                                                                                                         | yes      |
-| MYSQL_PASSWORD            | MySQL user's password (must meet complexity standards)                                                                               | Randomly generated if none is supplied                                                                       | yes      |
-| MYSQL_ROOT_PASSWORD       | MySQL "root" user's password (must meet complexity standards)                                                                        | Randomly generated if none is supplied                                                                       | yes      |
+| MYSQL_PASSWORD            | MySQL user's password (must meet complexity standards)                                                                               | NULL                                                                                                         | yes      |
+| MYSQL_ROOT_PASSWORD       | MySQL "root" user's password (must meet complexity standards)                                                                        | NULL                                                                                                         | yes      |
 
 ## Reference
 
