@@ -825,7 +825,12 @@ function step_tomcat_service_standard() {
     rm "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION.tar.gz"
     rm -Rf "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION"
     chmod 0700 "${CATALINA_HOME}/conf/Catalina/localhost"
-
+    # remove default tomcat applications
+    rm -Rf "$TOMCAT_INSTALL_HOME/webapps/docs/"
+    rm -Rf "$TOMCAT_INSTALL_HOME/webapps/examples/"
+    rm -Rf "$TOMCAT_INSTALL_HOME/webapps/host-manager/"
+    rm -Rf "$TOMCAT_INSTALL_HOME/webapps/manager/"
+    rm -Rf "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
     # Create Standard Tomcat Systemd service file -
 
     #create tomcat_lk systemd service file
