@@ -492,8 +492,13 @@ function step_wcp_outro() {
   echo "
     Thank you for installing MyStudies WCP Server!
 
-    You May access the installed WCP from ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}
-    Logs are available at ${TOMCAT_INSTALL_HOME}/logs/
+    You may login to the installed WCP from ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/fdahpStudyDesigner/login.do
+
+    You may test to see if the other WCP services respond with these URLs:
+       curl -k ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/StudyMetaData/ping
+       curl -k ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/fdaResources/
+
+    Logs are available at: ${TOMCAT_INSTALL_HOME}/logs/
   "
 }
 
@@ -539,6 +544,8 @@ function main() {
   step_initialize_wcp_database
   console_msg "Starting WCP Services"
   step_start_wcp
+  console_msg "Installation completed"
+  step_wcp_outro
 
 }
 
