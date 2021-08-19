@@ -296,8 +296,8 @@ FDARESOURCE_HERE
 function step_mysql_config() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  echo 'WARNING: $MYSQL_PASSWORD & $MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe'
-  echo 'WARNING: MySQL password complexity requirements set to "MEDIUM" by default'
+  echo "WARNING: \$MYSQL_PASSWORD & \$MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe"
+  echo "WARNING: MySQL password complexity requirements set to \"MEDIUM\" by default"
 
   case "_$(platform)" in
   _amzn)
