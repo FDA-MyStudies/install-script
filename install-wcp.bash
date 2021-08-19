@@ -80,8 +80,8 @@ function step_wcp_default_envs() {
   WCP_PRIVACY_POLICY_URL="${WCP_PRIVACY_POLICY_URL:-}"
   WCP_REGISTRATION_URL="${WCP_REGISTRATION_URL:-reg.localhost}"
   WCP_TERMS_URL="${WCP_TERMS_URL:-}"
-  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/21.3.8/wcp_full-21.3.8-5.zip}"
-  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-21.3.8-5.zip}"
+  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/21.7.1/wcp_full-21.7.1-8.zip}"
+  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-21.7.1-8.zip}"
   WCP_SQL_SCRIPT_URL="${WCP_SQL_SCRIPT_URL:-https://raw.githubusercontent.com/FDA-MyStudies/WCP/develop/sqlscript/HPHC_My_Studies_DB_Create_Script.sql}"
   WCP_SQL_FILENAME="${WCP_SQL_FILENAME:-My_Studies_DB_Create_Script.sql}"
   MYSQL_HOST="${MYSQL_HOST:-localhost}"
@@ -103,8 +103,7 @@ function step_wcp_required_envs() {
 
   for key in \
     MYSQL_PASSWORD \
-    MYSQL_ROOT_PASSWORD \
-  ; do
+    MYSQL_ROOT_PASSWORD; do
     local value
     value="$(env | grep -s "$key" || true)"
 
@@ -297,15 +296,15 @@ FDARESOURCE_HERE
 function step_mysql_config() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  echo "WARNING: \$MYSQL_PASSWORD & \$MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe"
-  echo "WARNING: MySQL password complexity requirements set to \"MEDIUM\" by default"
+  echo 'WARNING: $MYSQL_PASSWORD & $MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe'
+  echo 'WARNING: MySQL password complexity requirements set to "MEDIUM" by default'
 
   case "_$(platform)" in
   _amzn)
 
     if [ "$MYSQL_SVR_LOCAL" == "TRUE" ]; then
       # MySQL repo
-      sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+      sudo rpm -Uvh https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
       #amazon-linux-extras install epel
       sudo amazon-linux-extras enable epel
       sudo yum clean metadata
@@ -328,7 +327,7 @@ function step_mysql_config() {
       console_msg "MYSQL Server and Client Installed ..."
 
     else
-      sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+      sudo rpm -Uvh https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
       #amazon-linux-extras install epel
       sudo amazon-linux-extras enable epel
       sudo yum clean metadata
@@ -341,7 +340,7 @@ function step_mysql_config() {
   _centos)
     if [ "$MYSQL_SVR_LOCAL" == "TRUE" ]; then
       # MySQL repo
-      sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+      sudo rpm -Uvh https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
       sudo yum clean metadata
       sudo yum update -y
       sudo yum install epel-release unzip -y
@@ -362,7 +361,7 @@ function step_mysql_config() {
       console_msg "MYSQL Server and Client Installed ..."
 
     else
-      sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+      sudo rpm -Uvh https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
       sudo yum clean metadata
       sudo yum install epel-release mysql-community-client unzip -y
       sudo yum install tomcat-native.x86_64 apr fontconfig -y
@@ -372,25 +371,15 @@ function step_mysql_config() {
 
   _ubuntu)
 
-    # sudo apt-get update
-    # Use mysql 5.7 from 18.04 repo as 20.04 uses mysql 8x
-    # configure for mysql 5.7
-    cat <<-MYSQLSELECTIONS | sudo debconf-set-selections
-				mysql-apt-config    mysql-apt-config/repo-codename  select  bionic
-				mysql-apt-config    mysql-apt-config/repo-distro    select  ubuntu
-				mysql-apt-config    mysql-apt-config/select-server  select  mysql-5.7
-				mysql-apt-config    mysql-apt-config/select-product select  Ok
-			MYSQLSELECTIONS
-
     if [ "$MYSQL_SVR_LOCAL" == "TRUE" ]; then
 
       # get mysql repo
-      wget http://repo.mysql.com/mysql-apt-config_0.8.17-1_all.deb
-      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.17-1_all.deb
+      wget https://dev.mysql.com/get/mysql-apt-config_0.8.18-1_all.deb
+      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.18-1_all.deb
       # force update after repo add
       sudo apt update
 
-      sudo DEBIAN_FRONTEND=noninteractive apt -y --allow-downgrades install -f unzip mysql-client=5.7* mysql-community-server=5.7* mysql-server=5.7* mysql-community-client=5.7*
+      sudo DEBIAN_FRONTEND=noninteractive apt -y install -f unzip mysql-client mysql-server
 
       sudo systemctl enable mysql.service
       sudo systemctl start mysql.service
@@ -405,10 +394,10 @@ function step_mysql_config() {
       console_msg "MYSQL Server and Client Installed ..."
 
     else
-      wget http://repo.mysql.com/mysql-apt-config_0.8.17-1_all.deb
-      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.17-1_all.deb
+      wget https://dev.mysql.com/get/mysql-apt-config_0.8.18-1_all.deb
+      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.18-1_all.deb
       sudo apt-get update
-      sudo apt-get -y install -f mysql-client=5.7* unzip
+      sudo apt-get -y install -f unzip mysql-client
       console_msg "MYSQL Client Installed ..."
     fi
 
