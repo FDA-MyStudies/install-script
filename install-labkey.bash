@@ -244,6 +244,9 @@ function step_default_envs() {
   ALT_FILE_ROOT_HEAD="${ALT_FILE_ROOT_HEAD:-/media/ebs_volume}"
   COOKIE_ALT_FILE_ROOT_HEAD="${COOKIE_ALT_FILE_ROOT_HEAD:-.ebs_volume}"
 
+  if [ -n "${DEBUG:-}" ]; then
+    env | sort
+  fi
 }
 
 function step_required_envs() {

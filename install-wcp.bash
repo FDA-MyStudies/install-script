@@ -94,6 +94,10 @@ function step_wcp_default_envs() {
   # Generate password if none is provided
   MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
   MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
+
+  if [ -n "${DEBUG:-}" ]; then
+    env | sort
+  fi
 }
 
 function step_wcp_required_envs() {
