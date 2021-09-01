@@ -353,9 +353,9 @@ function step_os_prereqs() {
     TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptopenjdk repo
     DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
-    if ! grep -q "$DEB_JDK_REPO" "/etc/apt/sources.list"; then
+    if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
       wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-      sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+      sudo add-apt-repository --update --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
     fi
 
     sudo apt-get update
