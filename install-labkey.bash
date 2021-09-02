@@ -355,7 +355,12 @@ function step_os_prereqs() {
     DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
       wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-      sudo add-apt-repository --update --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+      NewFile="/etc/apt/sources.list.d/adoptopenjdk.list"
+      (
+        /bin/cat <<-ADOPTOPENJDK_APT_REPO
+				deb $DEB_JDK_REPO $(lsb_release -sc) main
+			ADOPTOPENJDK_APT_REPO
+      ) >"$NewFile"
     fi
 
     sudo apt-get update
