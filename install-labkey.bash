@@ -244,6 +244,9 @@ function step_default_envs() {
   ALT_FILE_ROOT_HEAD="${ALT_FILE_ROOT_HEAD:-/media/ebs_volume}"
   COOKIE_ALT_FILE_ROOT_HEAD="${COOKIE_ALT_FILE_ROOT_HEAD:-.ebs_volume}"
 
+  if [ -n "${DEBUG:-}" ]; then
+    env | sort
+  fi
 }
 
 function step_required_envs() {
@@ -350,9 +353,14 @@ function step_os_prereqs() {
     TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptopenjdk repo
     DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
-    if ! grep -q "$DEB_JDK_REPO" "/etc/apt/sources.list"; then
+    if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
       wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-      sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+      NewFile="/etc/apt/sources.list.d/adoptopenjdk.list"
+      (
+        /bin/cat <<-ADOPTOPENJDK_APT_REPO
+				deb $DEB_JDK_REPO $(lsb_release -sc) main
+			ADOPTOPENJDK_APT_REPO
+      ) >"$NewFile"
     fi
 
     sudo apt-get update
