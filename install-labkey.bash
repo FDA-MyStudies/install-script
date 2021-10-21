@@ -356,11 +356,11 @@ function step_os_prereqs() {
     console_msg "Checking SELinux Mode...."
     SEL_STATUS="$(/sbin/getenforce)"
     console_msg "SELinux Mode is: $SEL_STATUS..."
-    if [[ $SEL_STATUS = "Enforcing" ]]; then
+    if [[ $SEL_STATUS == "Enforcing" ]]; then
       console_msg "Setting SELinux Status to Permissive"
       sudo /sbin/setenforce 0
       sudo sed -i 's/ELINUX=enforcing/ELINUX=disabled/g' /etc/selinux/config
-      fi
+    fi
     # Add adoptopenjdk repo
     if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
       NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
@@ -647,8 +647,8 @@ function step_postgres_configure() {
     fi
     ;;
 
-
-  _rhel)
+  \
+    _rhel)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
       sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
       # Disable the built-in PostgreSQL module:
