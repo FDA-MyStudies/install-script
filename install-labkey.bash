@@ -347,6 +347,37 @@ function step_os_prereqs() {
     sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
     ;;
 
+  _rhel)
+    sudo yum update -y
+    sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    sudo yum repolist
+    sudo yum install vim wget -y
+    # - set selinux to permissive mode - SELinux Settings for Tomcat are complicated and beyond scope of this script
+    console_msg "Checking SELinux Mode...."
+    SEL_STATUS="$(/sbin/getenforce)"
+    console_msg "SELinux Mode is: $SEL_STATUS..."
+    if [[ $SEL_STATUS = "Enforcing" ]]; then
+      console_msg "Setting SELinux Status to Permissive"
+      sudo /sbin/setenforce 0
+      sudo sed -i 's/ELINUX=enforcing/ELINUX=disabled/g' /etc/selinux/config
+      fi
+    # Add adoptopenjdk repo
+    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+      (
+        /bin/cat <<-RHEL_JDK_HERE
+				[AdoptOpenJDK]
+				name=AdoptOpenJDK
+				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/rhel/\$releasever/\$basearch
+				enabled=1
+				gpgcheck=1
+				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+			RHEL_JDK_HERE
+      ) >"$NewFile"
+    fi
+    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+    ;;
+
   _ubuntu)
     # ubuntu stuff here
     export DEBIAN_FRONTEND=noninteractive
@@ -612,6 +643,36 @@ function step_postgres_configure() {
       console_msg "Postgres Server and Client Installed ..."
     else
       sudo yum install -y postgresql11
+      console_msg "Postgres Client Installed ..."
+    fi
+    ;;
+
+
+  _rhel)
+    if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
+      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+      # Disable the built-in PostgreSQL module:
+      sudo dnf -qy module disable postgresql
+      sudo yum clean metadata
+      sudo yum update -y
+    fi
+
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo yum install -y postgresql12-server
+
+      if [ ! -f /var/lib/pgsql/12/data/PG_VERSION ]; then
+        /usr/pgsql-12/bin/postgresql-12-setup initdb
+      fi
+      sudo systemctl enable postgresql-12
+      sudo systemctl start postgresql-12
+      sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+      sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+      sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/12/data/pg_hba.conf
+      sudo systemctl restart postgresql-12
+      console_msg "Postgres Server and Client Installed ..."
+    else
+      sudo yum install -y postgresql12
       console_msg "Postgres Client Installed ..."
     fi
     ;;
