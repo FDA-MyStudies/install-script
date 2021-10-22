@@ -1195,7 +1195,7 @@ SERVERXMLHERE
     (
       /bin/cat <<ROOTXMLHERE
 <?xml version='1.0' encoding='utf-8'?>
-<Context docBase="/labkey/labkey/labkeywebapp" reloadable="true" crossContext="true">
+<Context docBase="$LABKEY_INSTALL_HOME/labkeywebapp" reloadable="true" crossContext="true">
 
     <Resource name="jdbc/labkeyDataSource" auth="Container"
         type="javax.sql.DataSource"
