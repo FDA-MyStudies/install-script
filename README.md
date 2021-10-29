@@ -177,7 +177,8 @@ The following tables list the available input variables and default values. In t
 | LABKEY_DIST_URL             | URL for downloading distribution files                            | https://${LABKEY_DIST_BUCKET}.s3.${LABKEY_DIST_REGION}.amazonaws.com/downloads/release/${LABKEY_DISTRIBUTION}/${LABKEY_VERSION}/LabKey${LABKEY_VERSION}-${LABKEY_BUILD}-${LABKEY_DISTRIBUTION}-embedded.tar.gz | no       |
 | LABKEY_DIST_FILENAME        | Filename of distribution                                          | LabKey${LABKEY_VERSION}-${LABKEY_BUILD}-${LABKEY_DISTRIBUTION}-embedded.tar.gz                                                                                                                                 | no       |
 | LABKEY_DIST_DIR             | Name of distribution directory (removes embedded from file name)  | ${LABKEY_DIST_FILENAME::-16}                                                                                                                                                                                   | no       |
-| LABKEY_PORT                 | TCP Port for tomcat/LabKey application                            | 8443                                                                                                                                                                                                           | no       |
+| LABKEY_HTTP_PORT            | TCP Port for tomcat/LabKey application                            | 8080                                                                                                                                                                                                           | no       |
+| LABKEY_HTTPS_PORT           | TCP Port for tomcat/LabKey application                            | 8443                                                                                                                                                                                                           | no       |
 | LABKEY_LOG_DIR              | Log directory for LabKey application logs                         | ${LABKEY_INSTALL_HOME}/logs                                                                                                                                                                                    | no       |
 | LABKEY_CONFIG_DIR           | Config directory for tomcat/LabKey applications                   | ${LABKEY_INSTALL_HOME}/config                                                                                                                                                                                  | no       |
 | LABKEY_EXT_MODULES_DIR      | Path to LabKey external modules directory                         | ${LABKEY_EXT_MODULES_DIR:-${LABKEY_INSTALL_HOME}/externalModules}                                                                                                                                              | no       |
@@ -207,11 +208,12 @@ The following tables list the available input variables and default values. In t
 
 ### Standard tomcat Install Type Inputs
 
-| Name           | Description                         | Default value                                                                                              | Required |
-| -------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
-| CATALINA_HOME  | Path used for CATALINA_HOME         | $TOMCAT_INSTALL_HOME                                                                                       | no       |
-| TOMCAT_VERSION | Tomcat version to install           | 9.0.50                                                                                                     | Yes      |
-| TOMCAT_URL     | URL to download tomcat distribution | <http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz> | yes      |
+| Name                        | Description                         | Default value                                                                                              | Required |
+| --------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
+| CATALINA_HOME               | Path used for CATALINA_HOME         | $TOMCAT_INSTALL_HOME                                                                                       | no       |
+| TOMCAT_VERSION              | Tomcat version to install           | 9.0.50                                                                                                     | Yes      |
+| TOMCAT_URL                  | URL to download tomcat distribution | <http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz> | yes      |
+| TOMCAT_USE_PRIVILEGED_PORTS | Use TCP ports < 1024 e.g. 80/443    | FALSE                                                                                                      | no       |        
 
 ### Embedded tomcat Install Type Inputs
 

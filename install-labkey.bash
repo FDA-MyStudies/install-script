@@ -174,7 +174,8 @@ function step_default_envs() {
   LABKEY_DIST_URL="${LABKEY_DIST_URL:-https://${LABKEY_DIST_BUCKET}.s3.${LABKEY_DIST_REGION}.amazonaws.com/downloads/release/${LABKEY_DISTRIBUTION}/${LABKEY_VERSION}/LabKey${LABKEY_VERSION}-${LABKEY_BUILD}-${LABKEY_DISTRIBUTION}-embedded.tar.gz}"
   LABKEY_DIST_FILENAME="${LABKEY_DIST_FILENAME:-LabKey${LABKEY_VERSION}-${LABKEY_BUILD}-${LABKEY_DISTRIBUTION}-embedded.tar.gz}"
   LABKEY_DIST_DIR="${LABKEY_DIST_DIR:-${LABKEY_DIST_FILENAME::-16}}"
-  LABKEY_PORT="${LABKEY_PORT:-8443}"
+  LABKEY_HTTPS_PORT="${LABKEY_HTTPS_PORT:-8443}"
+  LABKEY_HTTP_PORT="${LABKEY_HTTP_PORT:-8080}"
   LABKEY_LOG_DIR="${LABKEY_LOG_DIR:-${LABKEY_INSTALL_HOME}/logs}"
   LABKEY_CONFIG_DIR="${LABKEY_CONFIG_DIR:-${LABKEY_INSTALL_HOME}/config}"
   LABKEY_EXT_MODULES_DIR="${LABKEY_EXT_MODULES_DIR:-${LABKEY_INSTALL_HOME}/externalModules}"
@@ -202,8 +203,9 @@ function step_default_envs() {
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
   # Used for Standard Tomcat installs only
-  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.50}"
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.54}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+  TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
   # Used for non-embedded distributions
   LABKEY_INSTALLER_CMD="$LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat"
 
@@ -448,7 +450,7 @@ function step_create_app_properties() {
 
 						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
 
-						server.port=${LABKEY_PORT}
+						server.port=${LABKEY_HTTPS_PORT}
 
 						spring.main.log-startup-info=true
 
@@ -575,7 +577,7 @@ function step_startup_properties() {
 				SiteSettings.baseServerURL=${LABKEY_BASE_SERVER_URL}
 				SiteSettings.defaultDomain=${LABKEY_DEFAULT_DOMAIN}
 				SiteSettings.pipelineToolsDirectory=${LABKEY_INSTALL_HOME}
-				SiteSettings.sslPort=${LABKEY_PORT}
+				SiteSettings.sslPort=${LABKEY_HTTPS_PORT}
 				SiteSettings.sslRequired=true
 
 				STARTUP_PROPS_HERE
@@ -944,6 +946,14 @@ function step_tomcat_service_standard() {
 				HERE_STD_TOMCAT_SERVICE
     ) >$NewFile
 
+    # Set Systemd property AmbientCapabilities=CAP_NET_BIND_SERVICE to allow tomcat to bind to ports <1024
+    if [[ -f "/etc/systemd/system/tomcat_lk.service" && $TOMCAT_USE_PRIVILEGED_PORTS == "TRUE" ]]; then
+      console_msg "Configuring tomcat_lk.service for privileged ports..."
+      if ! grep -iq 'AmbientCapabilities' "/etc/systemd/system/tomcat_lk.service"; then
+        sed -i '/\[Service\]/a AmbientCapabilities=CAP_NET_BIND_SERVICE' /etc/systemd/system/tomcat_lk.service
+      fi
+    fi
+
     # create tomcat server.xml
     TomcatServerFile="$CATALINA_HOME/conf/server.xml"
     (
@@ -1042,8 +1052,8 @@ function step_tomcat_service_standard() {
 
         <!-- Define HTTP connector -->
         <Connector
-            port="8080"
-            redirectPort="8443"
+            port="$LABKEY_HTTP_PORT"
+            redirectPort="$LABKEY_HTTPS_PORT"
             scheme="http"
             protocol="org.apache.coyote.http11.Http11AprProtocol"
             executor="tomcatSharedThreadPool"
@@ -1066,7 +1076,7 @@ function step_tomcat_service_standard() {
 
         <!-- Define HTTPS connector -->
         <Connector
-            port="8443"
+            port="$LABKEY_HTTPS_PORT"
             scheme="https"
             secure="true"
             SSLEnabled="true"
@@ -1123,7 +1133,7 @@ function step_tomcat_service_standard() {
              Define an AJP 1.3 Connector on port 8009 -->
         <!-- Disable AJP -->
         <!--
-        <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+        <Connector port="8009" protocol="AJP/1.3" redirectPort="$LABKEY_HTTPS_PORT" />
         -->
 
         <!--
@@ -1271,7 +1281,7 @@ function step_outro() {
   echo "
     Thank you for installing LabKey!
 
-    Access installed LabKey from ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}
+    Access installed LabKey from ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_HTTPS_PORT:-}
   "
 }
 
