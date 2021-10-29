@@ -22,3 +22,7 @@ export LABKEY_DISTRIBUTION="community"
 export LABKEY_LOG_DIR="/labkey/apps/tomcat/logs"
 export LABKEY_CONFIG_DIR="/labkey/apps/tomcat/config"
 export LABKEY_STARTUP_DIR="/labkey/labkey/startup"
+
+#export TOMCAT_USE_PRIVILEGED_PORTS="TRUE"
+#export LABKEY_HTTP_PORT=80
+#export LABKEY_HTTPS_PORT=443
