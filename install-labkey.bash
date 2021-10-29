@@ -204,6 +204,7 @@ function step_default_envs() {
   # Used for Standard Tomcat installs only
   TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.50}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
+  TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
   # Used for non-embedded distributions
   LABKEY_INSTALLER_CMD="$LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat"
 
@@ -943,6 +944,13 @@ function step_tomcat_service_standard() {
 				WantedBy=multi-user.target
 				HERE_STD_TOMCAT_SERVICE
     ) >$NewFile
+
+    # Set Systemd property AmbientCapabilities=CAP_NET_BIND_SERVICE to allow tomcat to bind to ports <1024
+    if [[ -f "/etc/systemd/system/tomcat_lk.service" && $TOMCAT_USE_PRIVILEGED_PORTS == "TRUE" ]]; then
+      if ! grep -iq 'AmbientCapabilities' "/etc/systemd/system/tomcat_lk.service" ; then
+        sed -i '/\[Service\]/a AmbientCapabilities=CAP_NET_BIND_SERVICE' /etc/systemd/system/tomcat_lk.service
+        fi
+    fi
 
     # create tomcat server.xml
     TomcatServerFile="$CATALINA_HOME/conf/server.xml"
