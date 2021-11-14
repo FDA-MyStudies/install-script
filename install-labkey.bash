@@ -608,6 +608,9 @@ function step_postgres_configure() {
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      # Fix up pg_hba.conf to allow local and remote auth via md5 for $POSTGRES_USER
+      sed -i "/local   all             all                                     trust/a local   all             $POSTGRES_USER                                  trust" /var/lib/pgsql/data/pg_hba.conf
+      sed -i 's/local   all             all                                     trust/local   all             postgres                                trust/' /var/lib/pgsql/data/pg_hba.conf
       sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
       sudo systemctl restart postgresql
       console_msg "Postgres Server and Client Installed ..."
@@ -640,6 +643,9 @@ function step_postgres_configure() {
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      # Fix up pg_hba.conf to allow local and remote auth via md5 for $POSTGRES_USER
+      sed -i "/local   all             all                                     trust/a local   all             $POSTGRES_USER                                  trust" /var/lib/pgsql/11/data/pg_hba.conf
+      sed -i 's/local   all             all                                     trust/local   all             postgres                                trust/' /var/lib/pgsql/11/data/pg_hba.conf
       sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/11/data/pg_hba.conf
       sudo systemctl restart postgresql-11
       console_msg "Postgres Server and Client Installed ..."
@@ -670,6 +676,9 @@ function step_postgres_configure() {
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
+      # Fix up pg_hba.conf to allow local and remote auth via md5 for $POSTGRES_USER
+      sed -i "/local   all             all                                     trust/a local   all             $POSTGRES_USER                                  trust" /var/lib/pgsql/12/data/pg_hba.conf
+      sed -i 's/local   all             all                                     trust/local   all             postgres                                trust/' /var/lib/pgsql/12/data/pg_hba.conf
       sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/12/data/pg_hba.conf
       sudo systemctl restart postgresql-12
       console_msg "Postgres Server and Client Installed ..."
@@ -703,6 +712,9 @@ function step_postgres_configure() {
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
       # This may not be needed on ubuntu
       #sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /etc/postgresql/12/main/pg_hba.conf
+      # Fix up pg_hba.conf to allow local and remote auth via md5 for $POSTGRES_USER
+      sed -i "/local   all             all                                     trust/a local   all             $POSTGRES_USER                                  trust" /etc/postgresql/12/main/pg_hba.conf
+      sed -i 's/local   all             all                                     trust/local   all             postgres                                trust/' /etc/postgresql/12/main/pg_hba.conf
       sudo systemctl restart postgresql
       console_msg "Postgres Server and Client Installed ..."
     else
