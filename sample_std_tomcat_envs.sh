@@ -15,14 +15,15 @@ export TOMCAT_INSTALL_HOME="${LABKEY_APP_HOME}/apps/tomcat"
 
 export LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1
 export TOMCAT_INSTALL_TYPE="Standard"
-export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.7.0/LabKey21.7.0-2-community.tar.gz"
-export LABKEY_DIST_FILENAME="LabKey21.7.0-2-community.tar.gz"
-export LABKEY_VERSION="21.7.0"
+export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.11.3/LabKey21.11.3-4-community.tar.gz"
+export LABKEY_DIST_FILENAME="LabKey21.11.3-4-community.tar.gz"
+export LABKEY_VERSION="21.11.3"
 export LABKEY_DISTRIBUTION="community"
 export LABKEY_LOG_DIR="/labkey/apps/tomcat/logs"
 export LABKEY_CONFIG_DIR="/labkey/apps/tomcat/config"
 export LABKEY_STARTUP_DIR="/labkey/labkey/startup"
 
-#export TOMCAT_USE_PRIVILEGED_PORTS="TRUE"
-#export LABKEY_HTTP_PORT=80
-#export LABKEY_HTTPS_PORT=443
+export TOMCAT_USE_PRIVILEGED_PORTS="TRUE"
+export LABKEY_HTTP_PORT=80
+export LABKEY_HTTPS_PORT=443
+#export TOMCAT_CONTEXT_PATH="labkey"
