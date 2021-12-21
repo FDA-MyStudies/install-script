@@ -197,15 +197,17 @@ function step_default_envs() {
   TOMCAT_KEYSTORE_FILENAME="${TOMCAT_KEYSTORE_FILENAME:-keystore.tomcat.p12}"
   TOMCAT_KEYSTORE_ALIAS="${TOMCAT_KEYSTORE_ALIAS:-tomcat}"
   TOMCAT_KEYSTORE_FORMAT="${TOMCAT_KEYSTORE_FORMAT:-PKCS12}"
+  TOMCAT_SESSION_TIMEOUT="${TOMCAT_SESSION_TIMEOUT:-30}"
 
   TOMCAT_SSL_CIPHERS="${TOMCAT_SSL_CIPHERS:-HIGH:!ADH:!EXP:!SSLv2:!SSLv3:!MEDIUM:!LOW:!NULL:!aNULL}"
   TOMCAT_SSL_ENABLED_PROTOCOLS="${TOMCAT_SSL_ENABLED_PROTOCOLS:-TLSv1.3,+TLSv1.2}"
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
   # Used for Standard Tomcat installs only
-  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.54}"
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.56}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
   TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
+  TOMCAT_CONTEXT_PATH="${TOMCAT_CONTEXT_PATH:-ROOT}"
   # Used for non-embedded distributions
   LABKEY_INSTALLER_CMD="$LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat"
 
@@ -909,9 +911,20 @@ function step_tomcat_service_standard() {
     if [[ -d "$TOMCAT_INSTALL_HOME/webapps/manager/" ]]; then
       rm -Rf "$TOMCAT_INSTALL_HOME/webapps/manager/"
     fi
-    if [[ -d "$TOMCAT_INSTALL_HOME/webapps/ROOT/" ]]; then
-      rm -Rf "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
+    if [[ $TOMCAT_CONTEXT_PATH == "ROOT" ]]; then
+      if [[ -d "$TOMCAT_INSTALL_HOME/webapps/ROOT/" ]]; then
+        rm -Rf "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
+      fi
     fi
+    if [[ $TOMCAT_CONTEXT_PATH != "ROOT" ]]; then
+      if [[ -d "$TOMCAT_INSTALL_HOME/webapps/ROOT/" ]]; then
+        rm -Rf "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
+        mkdir -p "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
+        echo "<% response.sendRedirect(\"/$TOMCAT_CONTEXT_PATH\"); %>" >"$TOMCAT_INSTALL_HOME/webapps/ROOT/index.jsp"
+        chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/webapps/ROOT/"
+      fi
+    fi
+
     # Create Standard Tomcat Systemd service file -
 
     #create tomcat_lk systemd service file
@@ -928,7 +941,7 @@ function step_tomcat_service_standard() {
 				Type=forking
 				Environment="JAVA_HOME=$JAVA_HOME"
 				Environment="CATALINA_BASE=$TOMCAT_INSTALL_HOME"
-				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true"
+				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true -Dlog4j2.formatMsgNoLookups=true"
 				Environment="CATALINA_TMPDIR=$TOMCAT_TMP_DIR"
 
 
@@ -1200,8 +1213,8 @@ SERVERXMLHERE
     ) >"$TomcatServerFile"
     chmod 600 "$TomcatServerFile"
 
-    # create Tomcat ROOT.xml
-    TomcatROOTXMLFile="$CATALINA_HOME/conf/Catalina/localhost/ROOT.xml"
+    # create Tomcat context path ROOT.xml
+    TomcatROOTXMLFile="$CATALINA_HOME/conf/Catalina/localhost/$TOMCAT_CONTEXT_PATH.xml"
     (
       /bin/cat <<ROOTXMLHERE
 <?xml version='1.0' encoding='utf-8'?>
