@@ -211,6 +211,7 @@ The following tables list the available input variables and default values. In t
 | Name                        | Description                         | Default value                                                                                              | Required |
 | --------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
 | CATALINA_HOME               | Path used for CATALINA_HOME         | $TOMCAT_INSTALL_HOME                                                                                       | no       |
+| TOMCAT_CONTEXT              | Context path for deployment         | ROOT                                                                                                       | no       |
 | TOMCAT_VERSION              | Tomcat version to install           | 9.0.50                                                                                                     | Yes      |
 | TOMCAT_URL                  | URL to download tomcat distribution | <http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz> | yes      |
 | TOMCAT_USE_PRIVILEGED_PORTS | Use TCP ports < 1024 e.g. 80/443    | FALSE                                                                                                      | no       |        
