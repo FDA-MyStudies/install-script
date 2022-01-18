@@ -138,7 +138,7 @@ function step_default_envs() {
   # environment variables in the shell used to launch this script.
 
   # Java env vars
-  ADOPTOPENJDK_VERSION="${ADOPTOPENJDK_VERSION:-adoptopenjdk-16-hotspot}"
+  ADOPTOPENJDK_VERSION="${ADOPTOPENJDK_VERSION:-temurin-17-jdk}"
 
   # set default heap min/max to 50% (w/ <= 8G) or 75% of total mem
   DEFAULT_JAVA_HEAP_SIZE="$(
@@ -313,17 +313,17 @@ function step_os_prereqs() {
   case "_$(platform)" in
   _amzn)
     # amzn stuff goes here
-    # Add adoptopenjdk repo
-    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
-      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+    # Add adoptium repo
+    if [ ! -f "/etc/yum.repos.d/adoptium.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptium.repo"
       (
         /bin/cat <<-AMZN_JDK_HERE
-				[AdoptOpenJDK]
-				name=AdoptOpenJDK
-				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/amazonlinux/\$releasever/\$basearch
+				[Adoptium]
+				name=Adoptium
+				baseurl=https://packages.adoptium.net/artifactory/rpm/amazonlinux/\$releasever/\$basearch
 				enabled=1
 				gpgcheck=1
-				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+				gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
 			AMZN_JDK_HERE
       ) >"$NewFile"
     fi
@@ -334,17 +334,17 @@ function step_os_prereqs() {
   _centos)
     sudo yum update -y
     sudo yum install epel-release vim wget -y
-    # Add adoptopenjdk repo
-    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
-      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+    # Add adoptium repo
+    if [ ! -f "/etc/yum.repos.d/adoptium.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptium.repo"
       (
         /bin/cat <<-AMZN_JDK_HERE
-				[AdoptOpenJDK]
-				name=AdoptOpenJDK
-				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/centos/\$releasever/\$basearch
+				[Adoptium]
+				name=Adoptium
+				baseurl=https://packages.adoptium.net/artifactory/rpm/centos/\$releasever/\$basearch
 				enabled=1
 				gpgcheck=1
-				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+				gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
 			AMZN_JDK_HERE
       ) >"$NewFile"
     fi
@@ -365,17 +365,17 @@ function step_os_prereqs() {
       sudo /sbin/setenforce 0
       sudo sed -i 's/ELINUX=enforcing/ELINUX=disabled/g' /etc/selinux/config
     fi
-    # Add adoptopenjdk repo
-    if [ ! -f "/etc/yum.repos.d/adoptopenjdk.repo" ]; then
-      NewFile="/etc/yum.repos.d/adoptopenjdk.repo"
+    # Add adoptium repo
+    if [ ! -f "/etc/yum.repos.d/adoptium.repo" ]; then
+      NewFile="/etc/yum.repos.d/adoptium.repo"
       (
         /bin/cat <<-RHEL_JDK_HERE
-				[AdoptOpenJDK]
-				name=AdoptOpenJDK
-				baseurl=http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/rhel/\$releasever/\$basearch
+				[Adoptium]
+				name=Adoptium
+				baseurl=https://packages.adoptium.net/artifactory/rpm/rhel/\$releasever/\$basearch
 				enabled=1
 				gpgcheck=1
-				gpgkey=https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+				gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
 			RHEL_JDK_HERE
       ) >"$NewFile"
     fi
@@ -386,11 +386,11 @@ function step_os_prereqs() {
     # ubuntu stuff here
     export DEBIAN_FRONTEND=noninteractive
     TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
-    # Add adoptopenjdk repo
-    DEB_JDK_REPO="https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/"
+    # Add adoptium repo
+    DEB_JDK_REPO="https://packages.adoptium.net/artifactory/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
-      wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
-      NewFile="/etc/apt/sources.list.d/adoptopenjdk.list"
+      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -
+      NewFile="/etc/apt/sources.list.d/adoptium.list"
       (
         /bin/cat <<-ADOPTOPENJDK_APT_REPO
 				deb $DEB_JDK_REPO $(lsb_release -sc) main
@@ -404,7 +404,7 @@ function step_os_prereqs() {
     ;;
 
   _*)
-    echo "can't install adoptopenjdk on unrecognized platform: \"$(platform)\""
+    echo "can't install adoptium on unrecognized platform: \"$(platform)\""
     ;;
   esac
 
@@ -773,10 +773,10 @@ function step_configure_labkey() {
   local ret=0
 
   # configure labkey to run
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_APP_HOME}"
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_SRC_HOME}"
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_INSTALL_HOME}"
-  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_APP_HOME}/"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_SRC_HOME}/"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_INSTALL_HOME}/"
+  chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/"
 
   # Configure for embedded
   if [[ $TOMCAT_INSTALL_TYPE == "Embedded" ]]; then
@@ -892,9 +892,9 @@ function step_tomcat_service_standard() {
     tar xzf "apache-tomcat-$TOMCAT_VERSION.tar.gz"
     cp -aR "${LABKEY_APP_HOME}"/src/apache-tomcat-"$TOMCAT_VERSION"/* "$TOMCAT_INSTALL_HOME/"
     chmod 0755 "$TOMCAT_INSTALL_HOME"
-    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
-    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_TMP_DIR"
-    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_TMP_DIR/"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$LABKEY_INSTALL_HOME/"
     rm "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION.tar.gz"
     rm -Rf "${LABKEY_APP_HOME}/src/apache-tomcat-$TOMCAT_VERSION"
     chmod 0700 "${CATALINA_HOME}/conf/Catalina/localhost"
@@ -1256,7 +1256,7 @@ ROOTXMLHERE
     ) >"$TomcatROOTXMLFile"
     chmod 600 "$TomcatROOTXMLFile"
     echo "Tomcat ROOT.xml file created at $TomcatROOTXMLFile"
-    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME"
+    chown -R "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "$TOMCAT_INSTALL_HOME/"
     console_msg " Tomcat (Standard) has been installed and configured."
   fi
 
@@ -1270,13 +1270,13 @@ function step_alt_files_link() {
   # Alt files volume must be mounted and formatted
   if [ -f "${ALT_FILE_ROOT_HEAD}/${COOKIE_ALT_FILE_ROOT_HEAD}" ]; then
     create_req_dir "${ALT_FILE_ROOT_HEAD}/files"
-    chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "${ALT_FILE_ROOT_HEAD}/files"
+    chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "${ALT_FILE_ROOT_HEAD}/files/"
     ln -s "${ALT_FILE_ROOT_HEAD}/files" "$LABKEY_INSTALL_HOME/files"
   else
     # create default files root
     if [ ! -d "$LABKEY_INSTALL_HOME/files" ]; then
       create_req_dir "$LABKEY_INSTALL_HOME/files"
-      chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "$LABKEY_INSTALL_HOME/files"
+      chown -R "${TOMCAT_USERNAME}.${TOMCAT_USERNAME}" "$LABKEY_INSTALL_HOME/files/"
     fi
   fi
 }
