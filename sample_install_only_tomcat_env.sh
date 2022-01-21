@@ -14,7 +14,6 @@
 # files will be replaced with defaults from the script.  You should backup any customized Tomcat configurations such
 # server.xml, ROOT.xml/labkey.xml etc.
 
-
 # Define required defaults - If you installed LabKey with this script previously, these VARS should match your previous
 # installation settings.
 export LABKEY_APP_HOME="/labkey"
