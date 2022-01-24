@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# The LabKey Install-Script is broken out into to step functions. Each STEP can be skipped by exporting the
+# The LabKey Install-Script is broken out into step functions. Each STEP can be skipped by exporting the
 # corresponding environment variable with the following syntax:
 # export LABKEY_INSTALL_SKIP_<<FUNCTION_NAME>>_STEP=1
 #         or (example)
@@ -36,24 +36,20 @@ export TOMCAT_KEYSTORE_PASSWORD="changeme"
 export POSTGRES_PASSWORD="changeme"
 export POSTGRES_USER="labkey"
 
-# Skip installation steps except those needed to install Tomcat
-# Need Intro and Default ENVS
-#export LABKEY_INSTALL_SKIP_INTRO_STEP=1
-#export LABKEY_INSTALL_SKIP_DEFAULT_ENVS_STEP=1
-
+# Skip installation steps except those needed to install/update Tomcat
 export LABKEY_INSTALL_SKIP_REQUIRED_ENVS_STEP=1
 export LABKEY_INSTALL_SKIP_CREATE_REQUIRED_PATHS_STEP=1
 export LABKEY_INSTALL_SKIP_DOWNLOAD_STEP=1
 export LABKEY_INSTALL_SKIP_CREATE_APP_PROPERTIES_STEP=1
 export LABKEY_INSTALL_SKIP_STARTUP_PROPERTIES_STEP=1
 export LABKEY_INSTALL_SKIP_POSTGRES_CONFIGURE_STEP=1
-# Tomcat user required for fresh install - this step can be skipped for update tomcat use cases
+# TOMCAT_USER_STEP is required for fresh installs, but can be skipped for updates
 export LABKEY_INSTALL_SKIP_TOMCAT_USER_STEP=1
 # Optional Self-Signed Tomcat_Cert will be recreated unless skipped
 #export LABKEY_INSTALL_SKIP_TOMCAT_CERT_STEP=1
 export LABKEY_INSTALL_SKIP_CONFIGURE_LABKEY_STEP=1
 export LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1
-# Use the Tomcat Service Function to install an updated version of Tomcat
+#  Do -not- skip TOMCAT_SERVICE_STANDARD to install an updated version of Tomcat
 #export LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_STANDARD_STEP=1
 export LABKEY_INSTALL_SKIP_ALT_FILES_LINK_STEP=1
 export LABKEY_INSTALL_SKIP_START_LABKEY_STEP=1

@@ -45,7 +45,7 @@ source ./sample_wcp_envs.sh
 ### Sample Helper Scripts Usage
 In addition to the sample installation environment files. This repo includes a few other sample environment files to 
 assist in various configurations and use cases.  The power and flexibility of the script's modular functions allow for 
-varied use cases such as installing java, installing java & tomcat updating tomcat etc. We have included a few examples 
+varied use cases such as installing java & tomcat, updating tomcat, etc. We have included a few examples 
 which demonstrate these use cases. 
 
 - `sample_install_only_java_env.sh`  - Sample env file that installs only OS dependencies and Java
@@ -213,13 +213,6 @@ To avoid the complexity of parsing CLI flags in bash or with `getopts`, and to m
 LABKEY_COMPANY_NAME='Megadodo Publications' ... ./install-labkey.bash
 ```
 
-And hopefully in the not-to-distant future:
-
-```bash
-curl -sSL https://install.hclq.sh | bash
-```
-
-
 ## Development
 
 Installation of LabKey products and service can be described in "steps" and that's the fundamental abstraction this script/repo strive to leverage.
@@ -268,9 +261,9 @@ Setting `LABKEY_INSTALL_SKIP_EXAMPLE_STEP=1` would cause the script in the above
 
 ### Writing Tests
 
-This repo uses an "xUnit"-style testing testing tool called [`shunit2`](https://github.com/kward/shunit2). `shunit2` was chosen over `bats` owning to the lack of strict mode support in `bats` when sourcing other scripts and their functions. See also: [Support for "unofficial strict mode"?](https://github.com/sstephenson/bats/issues/171).
+This repo uses an "xUnit"-style testing tool called [`shunit2`](https://github.com/kward/shunit2). `shunit2` was chosen over `bats` due to the lack of strict mode support in `bats` when sourcing other scripts and their functions. See also: [Support for "unofficial strict mode"?](https://github.com/sstephenson/bats/issues/171).
 
-`shunit2` uses "assertions" as the currency with which code functionality is purchased. Some common, self explanatory assertions are: `assertEquals`, `assertNull`, and `assertTrue`. Assertions generally follow the format: `<assertionFunction> <message upon failure> <expected results> <actual results>` and in true Bash fashion, mostly operate on strings. E.g.: `assertEquals 'values not equal' 'apple' "$(fn_which_prints_pear)"` would fail assuming `fn_which_prints_pear` would print "pear".
+`shunit2` uses "assertions" as the currency with which code functionality is purchased. Some common, self-explanatory assertions are: `assertEquals`, `assertNull`, and `assertTrue`. Assertions generally follow the format: `<assertionFunction> <message upon failure> <expected results> <actual results>` and in true Bash fashion, mostly operate on strings. E.g.: `assertEquals 'values not equal' 'apple' "$(fn_which_prints_pear)"` would fail assuming `fn_which_prints_pear` would print "pear".
 
 Tests for specific functionality of a given installation "step" can be written to a test script file named after that steps (as with `step_intro_test.sh`). And tests for internal functions can be written to the `internals.sh` script file.
 
@@ -278,9 +271,9 @@ Try to avoid writing tests that verify the functionality of reliable tools like 
 
 ### Running tests Locally
 
-An advantage of having a "purely bash" testing framework is the ability to just add the `shunit2` source file into one's repo, so you'll both find it within the `test` directory and excluded from shells script linting in the github actions.
+An advantage of having a "purely bash" testing framework is the ability to just add the `shunit2` source file into one's repo, so you'll both find it within the `test` directory and excluded from shell script linting in the github actions.
 
-Since a copy of the `shunit2` source code exists in this repo, the tests are self-contained and assuming they have execute permissions, can be run simply as:
+Since a copy of the `shunit2` source code exists in this repo, the tests are self-contained and, assuming they have execute permissions, can be run simply as:
 
 ```bash
 ./test/internals.sh

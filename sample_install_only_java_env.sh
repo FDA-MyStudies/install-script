@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# The LabKey Install-Script is broken out into to step functions.  Each STEP can be skipped by exporting the
+# The LabKey Install-Script is broken out into step functions.  Each STEP can be skipped by exporting the
 # corresponding environment variable with the following syntax:
 # export LABKEY_INSTALL_SKIP_<<Function_NAME>>_STEP=1
 #         or
@@ -19,12 +19,7 @@ export LABKEY_BASE_SERVER_URL="https://localhost"
 export TOMCAT_INSTALL_HOME="${LABKEY_APP_HOME}/apps/tomcat"
 export TOMCAT_INSTALL_TYPE="Standard"
 
-# Skip installation steps except those needed to install the OS pre-requisites - this function installs java and other
-# os specific dependencies.
-# Need Intro and Default ENVS
-#export LABKEY_INSTALL_SKIP_INTRO_STEP=1
-#export LABKEY_INSTALL_SKIP_DEFAULT_ENVS_STEP=1
-
+# Skip installation steps except those needed to install java and other OS specific dependencies.
 export LABKEY_INSTALL_SKIP_REQUIRED_ENVS_STEP=1
 export LABKEY_INSTALL_SKIP_CREATE_REQUIRED_PATHS_STEP=1
 export LABKEY_INSTALL_SKIP_DOWNLOAD_STEP=1
