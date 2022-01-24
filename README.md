@@ -265,7 +265,7 @@ This repo uses an "xUnit"-style testing tool called [`shunit2`](https://github.c
 
 `shunit2` uses "assertions" as the currency with which code functionality is purchased. Some common, self-explanatory assertions are: `assertEquals`, `assertNull`, and `assertTrue`. Assertions generally follow the format: `<assertionFunction> <message upon failure> <expected results> <actual results>` and in true Bash fashion, mostly operate on strings. E.g.: `assertEquals 'values not equal' 'apple' "$(fn_which_prints_pear)"` would fail assuming `fn_which_prints_pear` would print "pear".
 
-Tests for specific functionality of a given installation "step" can be written to a test script file named after that steps (as with `step_intro_test.sh`). And tests for internal functions can be written to the `internals.sh` script file.
+Tests for specific functionality of a given installation "step" can be written to a test script file named after that step (as with `step_intro_test.sh`). And tests for internal functions can be written to the `internals.sh` script file.
 
 Try to avoid writing tests that verify the functionality of reliable tools like `mkdir`.
 
