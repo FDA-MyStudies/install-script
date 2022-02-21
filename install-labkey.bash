@@ -1236,6 +1236,7 @@ SERVERXMLHERE
         testWhileIdle="true"
         timeBetweenEvictionRunsMillis="60000"
         minEvictableIdleTimeMillis="300000"
+        maxWaitMillis="120000"
         validationQuery="SELECT 1" />
 
     <Resource name="mail/Session" auth="Container"
