@@ -357,6 +357,7 @@ function step_create_auth_properties() {
 function step_mysql_config() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
+  # shellcheck disable=SC2016
   echo 'WARNING: $MYSQL_PASSWORD & $MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe'
   echo 'WARNING: MySQL password complexity requirements set to "MEDIUM" by default'
 
