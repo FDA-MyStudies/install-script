@@ -98,7 +98,6 @@ function step_wcp_default_envs() {
   WCP_APP_NOTIFY_TITLE="${WCP_APP_NOTIFY_TITLE:-MyStudies}"
   WCP_APP_EMAIL_TITLE="${WCP_APP_EMAIL_TITLE:- The MyStudies Platform Team}"
 
-
   MYSQL_HOST="${MYSQL_HOST:-localhost}"
   MYSQL_DB="${MYSQL_DB:-wcp_db}"
   MYSQL_USER="${MYSQL_USER:-app}"
@@ -328,13 +327,13 @@ function step_create_auth_properties() {
   # skip creation of authorizationResources.properties file if it already exists
   if [ -f "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties" ]; then
     console_msg "WARNING: The authorizationResource.properties exists at ${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties - you may want to verify its contents."
-    return 0;
-    fi
+    return 0
+  fi
 
   if [ ! -f "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties" ]; then
-      # create authorizationResources.properties file using env vars
-      NewFile="${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
-      (
+    # create authorizationResources.properties file using env vars
+    NewFile="${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
+    (
       /bin/cat <<-AUTH_PROPERTIES_HERE
 				############################# AUTHORIZATION DETAILS #############################
 				$WCP_LABKEY_APP_TOKEN=labkey.apptoken
@@ -347,10 +346,10 @@ function step_create_auth_properties() {
 				$WCP_IOS_BUNDLE_ID=ios.bundleid
 
 				AUTH_PROPERTIES_HERE
-      ) >"$NewFile"
+    ) >"$NewFile"
 
-      chmod 600 "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
-      chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
+    chmod 600 "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
+    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
   fi
 
 }
@@ -358,8 +357,8 @@ function step_create_auth_properties() {
 function step_mysql_config() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-  echo "WARNING: \$MYSQL_PASSWORD & \$MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe"
-  echo "WARNING: MySQL password complexity requirements set to \"MEDIUM\" by default"
+  echo 'WARNING: $MYSQL_PASSWORD & $MYSQL_ROOT_PASSWORD must meet complexity requirements and be shell-safe'
+  echo 'WARNING: MySQL password complexity requirements set to "MEDIUM" by default'
 
   case "_$(platform)" in
   _amzn)
