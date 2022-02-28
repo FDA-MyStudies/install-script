@@ -84,13 +84,28 @@ function step_wcp_default_envs() {
   WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-21.7.1-8.zip}"
   WCP_SQL_SCRIPT_URL="${WCP_SQL_SCRIPT_URL:-https://raw.githubusercontent.com/FDA-MyStudies/WCP/develop/sqlscript/HPHC_My_Studies_DB_Create_Script.sql}"
   WCP_SQL_FILENAME="${WCP_SQL_FILENAME:-My_Studies_DB_Create_Script.sql}"
+
+  WCP_LABKEY_APP_TOKEN="${WCP_LABKEY_APP_TOKEN:-00000000-0000-0000-0000-000000000000}"
+  WCP_LABKEY_BUNDLE_ID="${WCP_LABKEY_BUNDLE_ID:-com.labkey.abc}"
+  WCP_ANDROID_APP_TOKEN="${WCP_ANDROID_APP_TOKEN:-00000000-0000-0000-0000-000000000000}"
+  WCP_ANDROID_BUNDLE_ID="${WCP_ANDROID_BUNDLE_ID:-1234567890}"
+  WCP_IOS_APP_TOKEN="${WCP_IOS_APP_TOKEN:-00000000-0000-0000-0000-000000000000}"
+  WCP_IOS_BUNDLE_ID="${WCP_IOS_BUNDLE_ID:-1234567890}"
+
+  WCP_APP_CUST_SERVE_EMAIL="${WCP_APP_CUST_SERVE_EMAIL:-donotreply@domain.com}"
+  WCP_APP_SERVER_SHUTDOWN_EMAIL="${WCP_APP_SERVER_SHUTDOWN_EMAIL:-donotreply@domain.com}"
+  WCP_APP_AUDIT_FAIL_EMAIL="${WCP_APP_AUDIT_FAIL_EMAIL:-donotreply@domain.com}"
+  WCP_APP_NOTIFY_TITLE="${WCP_APP_NOTIFY_TITLE:-MyStudies}"
+  WCP_APP_EMAIL_TITLE="${WCP_APP_EMAIL_TITLE:- The MyStudies Platform Team}"
+
+
   MYSQL_HOST="${MYSQL_HOST:-localhost}"
   MYSQL_DB="${MYSQL_DB:-wcp_db}"
   MYSQL_USER="${MYSQL_USER:-app}"
   MYSQL_SVR_LOCAL="${MYSQL_SVR_LOCAL:-FALSE}"
   MYSQL_PORT="${MYSQL_PORT:-3306}"
 
-  # both passwords below must me MySQL's default complexity requirements
+  # both passwords below must meet MySQL's default complexity requirements
   # Generate password if none is provided
   MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
   MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
@@ -198,6 +213,15 @@ function step_create_wcp_properties() {
 				#FDA registration server root URL
 				fda.registration.root.url=https://${WCP_REGISTRATION_URL}
 
+				#App Email Address
+				email.address.customer.service=${WCP_APP_CUST_SERVE_EMAIL}
+				email.address.server.shutdown=${WCP_APP_SERVER_SHUTDOWN_EMAIL}
+				email.address.audit.failure=${WCP_APP_AUDIT_FAIL_EMAIL}
+
+				#APP MESSAGE PROPERTIES
+				fda.smd.notification.title=${WCP_APP_NOTIFY_TITLE}
+				fda.smd.email.title=${WCP_APP_EMAIL_TITLE}
+
 WCP_PROPS_HERE
     ) >"$NewFile"
     chmod 600 "${TOMCAT_INSTALL_HOME}/conf/wcp.properties"
@@ -258,6 +282,7 @@ function step_create_context_xml() {
     <Parameter name="property_file_name" value="wcp" override="1"/>
     <Parameter name="property_file_location_config" value="file:${TOMCAT_INSTALL_HOME}/conf/wcp.properties" override="1"/>
     <Parameter name="property_file_location_path" value="${TOMCAT_INSTALL_HOME}/conf/wcp.properties" override="1"/>
+    <Parameter name="authorizationResource_file_location_path" value="${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties" override="1"/>
 </Context>
 
 CONTEXT_HERE
@@ -293,6 +318,39 @@ FDARESOURCE_HERE
 
   else
     console_msg "Warning: The fdaResources.xml file already exists at ${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml you may want to verify its contents."
+  fi
+
+}
+
+function step_create_auth_properties() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  # skip creation of authorizationResources.properties file if it already exists
+  if [ -f "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties" ]; then
+    console_msg "WARNING: The authorizationResource.properties exists at ${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties - you may want to verify its contents."
+    return 0;
+    fi
+
+  if [ ! -f "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties" ]; then
+      # create authorizationResources.properties file using env vars
+      NewFile="${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
+      (
+      /bin/cat <<-AUTH_PROPERTIES_HERE
+				############################# AUTHORIZATION DETAILS #############################
+				$WCP_LABKEY_APP_TOKEN=labkey.apptoken
+				$WCP_LABKEY_BUNDLE_ID=labkey.bundleid
+
+				$WCP_ANDROID_APP_TOKEN=android.apptoken
+				$WCP_ANDROID_BUNDLE_ID=android.bundleid
+
+				$WCP_IOS_APP_TOKEN=ios.apptoken
+				$WCP_IOS_BUNDLE_ID=ios.bundleid
+
+				AUTH_PROPERTIES_HERE
+      ) >"$NewFile"
+
+      chmod 600 "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
+      chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/conf/authorizationResource.properties"
   fi
 
 }
@@ -527,6 +585,8 @@ function main() {
   step_create_context_xml
   console_msg "Creating fdaResources.xml"
   step_create_fdaresources_xml
+  console_msg "Creating authorizationResource.properties"
+  step_create_auth_properties
   console_msg "Creating Alt files path links"
   step_alt_files_link
   console_msg "Configuring MySQL"
