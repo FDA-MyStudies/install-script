@@ -436,7 +436,7 @@ function step_mysql_config() {
     if [ "$MYSQL_SVR_LOCAL" == "TRUE" ]; then
 
       # get mysql repo
-      wget https://dev.mysql.com/get/ql-apt-config_0.8.22-1_all.deb
+      wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
       sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.22-1_all.deb
       # force update after repo add
       sudo apt update
