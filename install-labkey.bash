@@ -941,6 +941,7 @@ function step_tomcat_service_standard() {
 				Type=forking
 				Environment="JAVA_HOME=$JAVA_HOME"
 				Environment="CATALINA_BASE=$TOMCAT_INSTALL_HOME"
+				Environment="CATALINA_HOME=$TOMCAT_INSTALL_HOME"
 				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true -Dlog4j2.formatMsgNoLookups=true"
 				Environment="CATALINA_TMPDIR=$TOMCAT_TMP_DIR"
 
