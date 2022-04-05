@@ -855,6 +855,7 @@ function step_tomcat_service_embedded() {
 				Environment="JAVA_LOG_JAR_OPS=${JAVA_LOG_JAR_OPS}"
 				Environment="JAVA_FLAGS_JAR_OPS=${JAVA_FLAGS_JAR_OPS}"
 				WorkingDirectory=${LABKEY_INSTALL_HOME}
+				OOMScoreAdjust=-500
 
 				ExecStart=$JAVA_HOME/bin/java \$JAVA_PRE_JAR_OPS \$JAVA_MID_JAR_OPS \$LABKEY_JAR_OPS \$JAVA_LOG_JAR_OPS \$JAVA_FLAGS_JAR_OPS -jar ${LABKEY_INSTALL_HOME}/labkeyServer.jar
 				SuccessExitStatus=0 143
@@ -944,6 +945,7 @@ function step_tomcat_service_standard() {
 				Environment="CATALINA_HOME=$TOMCAT_INSTALL_HOME"
 				Environment="CATALINA_OPTS=-Djava.library.path=$TOMCAT_LIB_PATH -Djava.awt.headless=true -Duser.timezone=$TOMCAT_TIMEZONE -Xms$JAVA_HEAP_SIZE -Xmx$JAVA_HEAP_SIZE -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$TOMCAT_TMP_DIR -Djava.net.preferIPv4Stack=true -Dlog4j2.formatMsgNoLookups=true"
 				Environment="CATALINA_TMPDIR=$TOMCAT_TMP_DIR"
+				OOMScoreAdjust=-500
 
 
 				ExecStart=$TOMCAT_INSTALL_HOME/bin/catalina.sh start
