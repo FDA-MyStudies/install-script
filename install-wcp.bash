@@ -512,7 +512,7 @@ function step_initialize_wcp_database() {
     # replace default root user in script with MYSQL_USER
     sed -i -e "s/root/${MYSQL_USER}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/localhost/%/g" "${WCP_SQL_FILENAME}"
-    # replace default wcp admin user info with /_* vars
+    # replace default wcp admin user info with WCP_ADMIN_* vars
     sed -i -e "s/Account/${WCP_ADMIN_FIRSTNAME}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/Manager/${WCP_ADMIN_LASTNAME}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/your email address/${WCP_ADMIN_EMAIL}/g" "${WCP_SQL_FILENAME}"
