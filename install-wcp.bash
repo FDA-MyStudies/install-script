@@ -76,7 +76,7 @@ function step_wcp_default_envs() {
   WCP_ADMIN_FIRSTNAME="${WCP_ADMIN_FIRSTNAME:-WCP}"
   WCP_ADMIN_LASTNAME="${WCP_ADMIN_LASTNAME:-Administrator}"
   WCP_ADMIN_EMAIL="${WCP_ADMIN_EMAIL:-donotreply@domain.com}"
-  WCP_HOSTNAME="${WCP_DOMAIN_NAME:-localhost:8443}"
+  WCP_HOSTNAME="${WCP_HOSTNAME:-localhost:8443}"
   WCP_PRIVACY_POLICY_URL="${WCP_PRIVACY_POLICY_URL:-}"
   WCP_REGISTRATION_URL="${WCP_REGISTRATION_URL:-reg.localhost}"
   WCP_TERMS_URL="${WCP_TERMS_URL:-}"
@@ -512,7 +512,7 @@ function step_initialize_wcp_database() {
     # replace default root user in script with MYSQL_USER
     sed -i -e "s/root/${MYSQL_USER}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/localhost/%/g" "${WCP_SQL_FILENAME}"
-    # replace default wcp admin user info with WCP_ADMIN_* vars
+    # replace default wcp admin user info with /_* vars
     sed -i -e "s/Account/${WCP_ADMIN_FIRSTNAME}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/Manager/${WCP_ADMIN_LASTNAME}/g" "${WCP_SQL_FILENAME}"
     sed -i -e "s/your email address/${WCP_ADMIN_EMAIL}/g" "${WCP_SQL_FILENAME}"
