@@ -165,9 +165,9 @@ function step_create_wcp_properties() {
 				sslfactory.value=javax.net.ssl.SSLSocketFactory
 
 				#File Conf
-				fda.imgUploadPath=${TOMCAT_INSTALL_HOME}/webapps/fdaResources/
+				fda.imgUploadPath=${TOMCAT_INSTALL_HOME}/webapps/mystudies_images/
 				# fda.currentPath=catalina.home
-				fda.imgDisplaydPath=/fdaResources/
+				fda.imgDisplaydPath=/mystudies_images/
 
 				#Email Conf
 				acceptLinkMail=https://${WCP_HOSTNAME}/fdahpStudyDesigner/createPassword.do?securityToken=
@@ -186,17 +186,17 @@ function step_create_wcp_properties() {
 				hibernate.connection.password=${MYSQL_PASSWORD}
 
 				#Study Image/Log Path
-				fda.smd.study.thumbnailPath=https://${WCP_HOSTNAME}/fdaResources/studylogo/
-				fda.smd.study.pagePath=https://${WCP_HOSTNAME}/fdaResources/studypages/
-				fda.smd.resource.pdfPath=https://${WCP_HOSTNAME}/fdaResources/studyResources/
+				fda.smd.study.thumbnailPath=https://${WCP_HOSTNAME}/mystudies_images/studylogo/
+				fda.smd.study.pagePath=https://${WCP_HOSTNAME}/mystudies_images/studypages/
+				fda.smd.resource.pdfPath=https://${WCP_HOSTNAME}/mystudies_images/studyResources/
 
 				#Terms and Privacy policy path
 				fda.smd.pricaypolicy=${WCP_PRIVACY_POLICY_URL}
 				fda.smd.terms=${WCP_TERMS_URL}
 
 				#Study Questionnaire Image/Log Path
-				fda.smd.questionnaire.image=https://${WCP_HOSTNAME}/fdaResources/questionnaire/
-				fda.smd.gatewayResource.pdfPath=https://${WCP_HOSTNAME}/fdaResources/gatewayResource/App_Glossary.pdf
+				fda.smd.questionnaire.image=https://${WCP_HOSTNAME}/mystudies_images/questionnaire/
+				fda.smd.gatewayResource.pdfPath=https://${WCP_HOSTNAME}/mystudies_images/gatewayResource/App_Glossary.pdf
 
 				#Feedback and Contact Us for from email
 				fda.smd.feedback=${WCP_FEEDBACK_EMAIL}
@@ -294,7 +294,7 @@ CONTEXT_HERE
 
 }
 
-function step_create_fdaresources_xml() {
+function step_create_mystudies_images_xml() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
   # rename labkey ROOT.xml as its not needed
@@ -302,21 +302,21 @@ function step_create_fdaresources_xml() {
     mv "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/ROOT.xml" "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/ROOT.xml.bak"
   fi
 
-  if [ ! -f "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml" ]; then
-    # create fdaResources.xml file
-    NewFile="${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml"
+  if [ ! -f "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/mystudies_images.xml" ]; then
+    # create mystudies_images.xml file
+    NewFile="${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/mystudies_images.xml"
     (
       /bin/cat <<FDARESOURCE_HERE
-<Context docBase="${TOMCAT_INSTALL_HOME}/webapps/fdaResources" debug="0" reloadable="true" crossContext="true">
+<Context docBase="${TOMCAT_INSTALL_HOME}/webapps/mystudies_images" debug="0" reloadable="true" crossContext="true">
 </Context>
 FDARESOURCE_HERE
     ) >"$NewFile"
 
-    chmod 600 "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml"
-    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml"
+    chmod 600 "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/mystudies_images.xml"
+    chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/mystudies_images.xml"
 
   else
-    console_msg "Warning: The fdaResources.xml file already exists at ${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/fdaResources.xml you may want to verify its contents."
+    console_msg "Warning: The mystudies_images.xml file already exists at ${TOMCAT_INSTALL_HOME}/conf/Catalina/localhost/mystudies_images.xml you may want to verify its contents."
   fi
 
 }
@@ -487,7 +487,7 @@ function step_download_wcp_dist() {
     chown "$TOMCAT_USERNAME"."$TOMCAT_USERNAME" "${LABKEY_APP_HOME}/src/labkey/"*.war
     cp -a "${LABKEY_APP_HOME}/src/labkey/StudyMetaData-"*.war "${TOMCAT_INSTALL_HOME}/webapps/StudyMetaData.war"
     cp -a "${LABKEY_APP_HOME}/src/labkey/fdahpStudyDesigner-"*.war "${TOMCAT_INSTALL_HOME}/webapps/fdahpStudyDesigner.war"
-    cp -a "${LABKEY_APP_HOME}/src/labkey/fdaResources.war" "${TOMCAT_INSTALL_HOME}/webapps/"
+    cp -a "${LABKEY_APP_HOME}/src/labkey/mystudies_images.war" "${TOMCAT_INSTALL_HOME}/webapps/"
     console_msg "WCP Distribution successfully downloaded and installed."
   else
     # fail if download fails or dist file is 0 bytes
@@ -548,7 +548,7 @@ function step_wcp_outro() {
 
     You may test to see if the other WCP services respond with these URLs:
        curl -k ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/StudyMetaData/ping
-       curl -k ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/fdaResources/
+       curl -k ${LABKEY_BASE_SERVER_URL:-}:${LABKEY_PORT:-}/mystudies_images/
 
     Logs are available at: ${TOMCAT_INSTALL_HOME}/logs/
   "
@@ -584,8 +584,8 @@ function main() {
   step_create_wcp_properties
   console_msg "Creating tomcat context.xml"
   step_create_context_xml
-  console_msg "Creating fdaResources.xml"
-  step_create_fdaresources_xml
+  console_msg "Creating mystudies_images.xml"
+  step_create_mystudies_images_xml
   console_msg "Creating authorizationResource.properties"
   step_create_auth_properties
   console_msg "Creating Alt files path links"
