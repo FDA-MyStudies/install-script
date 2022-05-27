@@ -204,7 +204,7 @@ function step_default_envs() {
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
   # Used for Standard Tomcat installs only
-  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.56}"
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.63}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
   TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
   TOMCAT_CONTEXT_PATH="${TOMCAT_CONTEXT_PATH:-ROOT}"
