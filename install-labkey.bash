@@ -204,7 +204,7 @@ function step_default_envs() {
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
   # Used for Standard Tomcat installs only
-  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.63}"
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.64}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
   TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
   TOMCAT_CONTEXT_PATH="${TOMCAT_CONTEXT_PATH:-ROOT}"
@@ -514,7 +514,7 @@ function step_create_app_properties() {
 						server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
 						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT}
 
-						context.masterEncryptionKey=${LABKEY_MEK}
+						context.EncryptionKey=${LABKEY_MEK}
 						context.serverGUID=${LABKEY_GUID}
 
 						#
@@ -1251,7 +1251,7 @@ SERVERXMLHERE
     <Loader loaderClass="org.labkey.bootstrap.LabkeyServerBootstrapClassLoader" />
 
     <!-- Encryption key for encrypted property store -->
-    <Parameter name="MasterEncryptionKey" value="$LABKEY_MEK" />
+    <Parameter name="EncryptionKey" value="$LABKEY_MEK" />
 
 
 </Context>
