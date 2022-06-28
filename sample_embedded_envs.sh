@@ -12,7 +12,7 @@ export LABKEY_BASE_SERVER_URL="https://localhost"
 #export LABKEY_INSTALL_SKIP_START_LABKEY_STEP=1
 export POSTGRES_SVR_LOCAL="TRUE"
 
-export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.11.5/LabKey21.11.5-6-community-embedded.tar.gz"
-export LABKEY_DIST_FILENAME="LabKey21.11.5-6-community-embedded.tar.gz"
-export LABKEY_VERSION="21.11.5"
+export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/22.3.4/LabKey22.3.4-6-community-embedded.tar.gz"
+export LABKEY_DIST_FILENAME="LabKey22.3.4-6-community-embedded.tar.gz"
+export LABKEY_VERSION="22.3.4"
 export LABKEY_DISTRIBUTION="community"

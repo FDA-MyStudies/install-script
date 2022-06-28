@@ -15,9 +15,9 @@ export TOMCAT_INSTALL_HOME="${LABKEY_APP_HOME}/apps/tomcat"
 
 export LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1
 export TOMCAT_INSTALL_TYPE="Standard"
-export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/21.11.5/LabKey21.11.5-6-community.tar.gz"
-export LABKEY_DIST_FILENAME="LabKey21.11.5-6-community.tar.gz"
-export LABKEY_VERSION="21.11.5"
+export LABKEY_DIST_URL="https://lk-binaries.s3.us-west-2.amazonaws.com/downloads/release/community/22.3.4/LabKey22.3.4-6-community.tar.gz"
+export LABKEY_DIST_FILENAME="LabKey22.3.4-6-community.tar.gz"
+export LABKEY_VERSION="22.3.4"
 export LABKEY_DISTRIBUTION="community"
 export LABKEY_LOG_DIR="/labkey/apps/tomcat/logs"
 export LABKEY_CONFIG_DIR="/labkey/apps/tomcat/config"
