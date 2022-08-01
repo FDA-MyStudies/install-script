@@ -80,8 +80,8 @@ function step_wcp_default_envs() {
   WCP_PRIVACY_POLICY_URL="${WCP_PRIVACY_POLICY_URL:-}"
   WCP_REGISTRATION_URL="${WCP_REGISTRATION_URL:-reg.localhost}"
   WCP_TERMS_URL="${WCP_TERMS_URL:-}"
-  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/21.7.1/wcp_full-21.7.1-8.zip}"
-  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-21.7.1-8.zip}"
+  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/22.7.1/wcp_full-22.7.1-41.zip}"
+  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-22.7.1-41.zip}"
   WCP_SQL_SCRIPT_URL="${WCP_SQL_SCRIPT_URL:-https://raw.githubusercontent.com/FDA-MyStudies/WCP/develop/sqlscript/HPHC_My_Studies_DB_Create_Script.sql}"
   WCP_SQL_FILENAME="${WCP_SQL_FILENAME:-My_Studies_DB_Create_Script.sql}"
 
@@ -507,6 +507,9 @@ function step_initialize_wcp_database() {
   cd "$LABKEY_SRC_HOME" || exit
   if [ ! -s "${LABKEY_APP_HOME}/src/labkey/${WCP_SQL_FILENAME}" ]; then
     wget "$WCP_SQL_SCRIPT_URL" -O "${WCP_SQL_FILENAME}"
+    # remove DEFINER= entries
+    # shellcheck disable=SC2016
+    sed -i -e 's/\DEFINER\=`[^`]*`@`[^`]*`//g' "${WCP_SQL_FILENAME}"
     # replace fda_hphc db name with MYSQL_DB name
     sed -i -e "s/fda_hphc/${MYSQL_DB}/g" "${WCP_SQL_FILENAME}"
     # replace default root user in script with MYSQL_USER
