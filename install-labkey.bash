@@ -727,20 +727,20 @@ function step_postgres_configure() {
 function step_remote_db_provision() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
-    if [ "$POSTGRES_SVR_LOCAL" == "FALSE" ] && [ "$POSTGRES_PROVISION_REMOTE_DB" == "TRUE" ]; then
-      if [[ -n $POSTGRES_REMOTE_ADMIN_PASSWORD ]]; then
-        export PGPASSWORD=$POSTGRES_REMOTE_ADMIN_PASSWORD
-        else
-          console_msg "You must supply a remote postgres_admin password to provision the remote database."
-          return 1
-        fi
-      console_msg "Provisioning remote postgres database ..."
-      psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
-      psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "grant $POSTGRES_USER to $POSTGRES_REMOTE_ADMIN_USER;"
-      psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
-      psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "revoke all on database $POSTGRES_DB from public;"
-      console_msg "Finished provisioning remote postgres database"
+  if [ "$POSTGRES_SVR_LOCAL" == "FALSE" ] && [ "$POSTGRES_PROVISION_REMOTE_DB" == "TRUE" ]; then
+    if [[ -n $POSTGRES_REMOTE_ADMIN_PASSWORD ]]; then
+      export PGPASSWORD=$POSTGRES_REMOTE_ADMIN_PASSWORD
+    else
+      console_msg "You must supply a remote postgres_admin password to provision the remote database."
+      return 1
     fi
+    console_msg "Provisioning remote postgres database ..."
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "grant $POSTGRES_USER to $POSTGRES_REMOTE_ADMIN_USER;"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "revoke all on database $POSTGRES_DB from public;"
+    console_msg "Finished provisioning remote postgres database"
+  fi
 
 }
 
