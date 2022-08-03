@@ -1360,7 +1360,6 @@ function main() {
   console_msg "Configuring Postgresql"
   step_postgres_configure
 
-  console_msg "Configure Remote Postgresql database"
   step_remote_db_provision
 
   console_msg "Configuring Tomcat user"
