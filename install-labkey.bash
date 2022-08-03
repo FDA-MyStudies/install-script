@@ -204,7 +204,7 @@ function step_default_envs() {
   TOMCAT_SSL_PROTOCOL="${TOMCAT_SSL_PROTOCOL:-TLS}"
 
   # Used for Standard Tomcat installs only
-  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.64}"
+  TOMCAT_VERSION="${TOMCAT_VERSION:-9.0.65}"
   TOMCAT_URL="http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz"
   TOMCAT_USE_PRIVILEGED_PORTS="${TOMCAT_USE_PRIVILEGED_PORTS:-FALSE}"
   TOMCAT_CONTEXT_PATH="${TOMCAT_CONTEXT_PATH:-ROOT}"
@@ -234,6 +234,9 @@ function step_default_envs() {
   POSTGRES_PARAMETERS="${POSTGRES_PARAMETERS:-}"
   # Generate password if none is provided
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 64 | tr -dc _A-Z-a-z-0-9 | fold -w 32 | head -n1)}"
+  POSTGRES_PROVISION_REMOTE_DB="${POSTGRES_PROVISION_REMOTE_DB:-FALSE}"
+  POSTGRES_REMOTE_ADMIN_USER="${POSTGRES_REMOTE_ADMIN_USER:-postgres_admin}"
+  POSTGRES_REMOTE_ADMIN_PASSWORD="${POSTGRES_REMOTE_ADMIN_PASSWORD:-}"
 
   # smtp env vars
   SMTP_HOST="${SMTP_HOST:-localhost}"
@@ -718,6 +721,26 @@ function step_postgres_configure() {
     echo "can't install postgres on unrecognized platform: \"$(platform)\""
     ;;
   esac
+
+}
+
+function step_remote_db_provision() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [ "$POSTGRES_SVR_LOCAL" == "FALSE" ] && [ "$POSTGRES_PROVISION_REMOTE_DB" == "TRUE" ]; then
+    if [[ -n $POSTGRES_REMOTE_ADMIN_PASSWORD ]]; then
+      export PGPASSWORD=$POSTGRES_REMOTE_ADMIN_PASSWORD
+    else
+      console_msg "You must supply a remote postgres_admin password to provision the remote database."
+      return 1
+    fi
+    console_msg "Provisioning remote postgres database ..."
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "grant $POSTGRES_USER to $POSTGRES_REMOTE_ADMIN_USER;"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_REMOTE_ADMIN_USER" -d postgres -c "revoke all on database $POSTGRES_DB from public;"
+    console_msg "Finished provisioning remote postgres database"
+  fi
 
 }
 
@@ -1336,6 +1359,8 @@ function main() {
 
   console_msg "Configuring Postgresql"
   step_postgres_configure
+
+  step_remote_db_provision
 
   console_msg "Configuring Tomcat user"
   step_tomcat_user
