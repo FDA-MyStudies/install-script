@@ -482,9 +482,9 @@ function step_remote_wcp_db_provision() {
     if [[ -n $MYSQL_REMOTE_ADMIN_PASSWORD ]]; then
       console_msg "Provisioning remote mysql database ..."
       mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE ${MYSQL_DB} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
-      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "CREATE USER ${MYSQL_USER}@localhost IDENTIFIED BY '${MYSQL_PASSWORD}';"
-      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "ALTER USER ${MYSQL_USER}@localhost PASSWORD EXPIRE NEVER;"
-      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON ${MYSQL_DB}.* TO '${MYSQL_USER}'@'localhost';"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "ALTER USER '${MYSQL_USER}'@'%' PASSWORD EXPIRE NEVER;"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON ${MYSQL_DB}.* TO '${MYSQL_USER}'@'%';"
       mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
       console_msg "Finished provisioning remote mysql database"
     else
