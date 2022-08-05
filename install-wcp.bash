@@ -98,11 +98,14 @@ function step_wcp_default_envs() {
   WCP_APP_NOTIFY_TITLE="${WCP_APP_NOTIFY_TITLE:-MyStudies}"
   WCP_APP_EMAIL_TITLE="${WCP_APP_EMAIL_TITLE:- The MyStudies Platform Team}"
 
-  MYSQL_HOST="${MYSQL_HOST:-localhost}"
   MYSQL_DB="${MYSQL_DB:-wcp_db}"
-  MYSQL_USER="${MYSQL_USER:-app}"
-  MYSQL_SVR_LOCAL="${MYSQL_SVR_LOCAL:-FALSE}"
+  MYSQL_HOST="${MYSQL_HOST:-localhost}"
   MYSQL_PORT="${MYSQL_PORT:-3306}"
+  MYSQL_PROVISION_REMOTE_DB="${MYSQL_PROVISION_REMOTE_DB:-FALSE}"
+  MYSQL_REMOTE_ADMIN_PASSWORD="${MYSQL_REMOTE_ADMIN_PASSWORD:-}"
+  MYSQL_REMOTE_ADMIN_USER="${MYSQL_REMOTE_ADMIN_USER:-mysql_admin}"
+  MYSQL_SVR_LOCAL="${MYSQL_SVR_LOCAL:-FALSE}"
+  MYSQL_USER="${MYSQL_USER:-app}"
 
   # both passwords below must meet MySQL's default complexity requirements
   # Generate password if none is provided
@@ -472,6 +475,26 @@ function step_mysql_config() {
 
 }
 
+function step_remote_wcp_db_provision() {
+  if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
+
+  if [ "$MYSQL_SVR_LOCAL" == "FALSE" ] && [ "$MYSQL_PROVISION_REMOTE_DB" == "TRUE" ]; then
+    if [[ -n $MYSQL_REMOTE_ADMIN_PASSWORD ]]; then
+      console_msg "Provisioning remote mysql database ..."
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE ${MYSQL_DB} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "CREATE USER ${MYSQL_USER}@localhost IDENTIFIED BY '${MYSQL_PASSWORD}';"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "ALTER USER ${MYSQL_USER}@localhost PASSWORD EXPIRE NEVER;"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON ${MYSQL_DB}.* TO '${MYSQL_USER}'@'localhost';"
+      mysql -h "$MYSQL_HOST" -u "$MYSQL_REMOTE_ADMIN_USER" -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
+      console_msg "Finished provisioning remote mysql database"
+    else
+      console_msg "You must supply a remote mysql admin password to provision the remote database."
+      return 1
+    fi
+  fi
+
+}
+
 function step_download_wcp_dist() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
   local ret=0
@@ -595,6 +618,7 @@ function main() {
   step_alt_files_link
   console_msg "Configuring MySQL"
   step_mysql_config
+  step_remote_wcp_db_provision
   console_msg "Downloading WCP distribution"
   step_download_wcp_dist
   console_msg "Initializing the WCP Database"
