@@ -58,7 +58,7 @@ The following tables list the available input variables and default values. In t
 ### General Install Inputs
 
 | Name                        | Description                                                       | Default value                                                                                                                                                                                                  | Required |
-| --------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+|-----------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | JAVA_HEAP_SIZE              | Java heap size                                                    | Input value or calculated >8GB = 75% of RAM, <8GB = 50% of RAM                                                                                                                                                 | no       |
 | LABKEY_COMPANY_NAME         | Company name used in application settings                         | LabKey                                                                                                                                                                                                         | no       |
 | LABKEY_SYSTEM_DESCRIPTION   | System description                                                | labkey demo deployment                                                                                                                                                                                         | no       |
@@ -90,7 +90,7 @@ The following tables list the available input variables and default values. In t
 ### Both tomcat Install Type Inputs
 
 | Name                         | Description                                                | Default value                                          | Required |
-| ---------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ | -------- |
+|------------------------------|------------------------------------------------------------|--------------------------------------------------------|----------|
 | TOMCAT_INSTALL_TYPE          | Tomcat installation type - "Embedded" or "Standard"        | Embedded                                               | yes      |
 | TOMCAT_INSTALL_HOME          | Path to tomcat base installation directory                 | $LABKEY_INSTALL_HOME                                   | yes      |
 | TOMCAT_TIMEZONE              | Tomcat timezone                                            | America/Los_Angeles                                    | yes      |
@@ -110,23 +110,23 @@ The following tables list the available input variables and default values. In t
 ### Standard tomcat Install Type Inputs
 
 | Name                        | Description                         | Default value                                                                                              | Required |
-| --------------------------- | ----------------------------------- |------------------------------------------------------------------------------------------------------------| -------- |
+|-----------------------------|-------------------------------------|------------------------------------------------------------------------------------------------------------|----------|
 | CATALINA_HOME               | Path used for CATALINA_HOME         | $TOMCAT_INSTALL_HOME                                                                                       | no       |
 | TOMCAT_CONTEXT              | Context path for deployment         | ROOT                                                                                                       | no       |
-| TOMCAT_VERSION              | Tomcat version to install           | 9.0.56                                                                                                     | Yes      |
+| TOMCAT_VERSION              | Tomcat version to install           | 9.0.65                                                                                                     | Yes      |
 | TOMCAT_URL                  | URL to download tomcat distribution | <http://archive.apache.org/dist/tomcat/tomcat-9/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz> | yes      |
 | TOMCAT_USE_PRIVILEGED_PORTS | Use TCP ports < 1024 e.g. 80/443    | FALSE                                                                                                      | no       |        
 
 ### Embedded tomcat Install Type Inputs
 
 | Name                 | Description                                             | Default value                                                                                                                                                                                                            | Required |
-| -------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+|----------------------|---------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | LABKEY_INSTALLER_CMD | LabKey installer command for non-embedded installations | $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7}/manual-upgrade.sh -l $LABKEY_INSTALL_HOME/ -d $LABKEY_SRC_HOME/${LABKEY_DIST_FILENAME::-7} -c $TOMCAT_INSTALL_HOME -u $TOMCAT_USERNAME --noPrompt --tomcat_lk --skip_tomcat | yes      |
 
 ### Tomcat TLS Certificates Inputs
 
 | Name    | Description         | Default value          | Required |
-| ------- | ------------------- | ---------------------- | -------- |
+|---------|---------------------|------------------------|----------|
 | CERT_C  | Country             | US                     | yes      |
 | CERT_ST | State               | Washington             | yes      |
 | CERT_L  | Locality or City    | Seattle                | yes      |
@@ -137,27 +137,30 @@ The following tables list the available input variables and default values. In t
 ### Tomcat properties used in application.properties for embedded installations
 
 | Name                 | Description                | Default value | Required |
-| -------------------- | -------------------------- | ------------- | -------- |
+|----------------------|----------------------------|---------------|----------|
 | LOG_LEVEL_TOMCAT     | Tomcat log-level           | OFF           | no       |
 | LOG_LEVEL_SPRING_WEB | Spring framework log-level | OFF           | no       |
 | LOG_LEVEL_SQL        | SQL log-level              | OFF           | no       |
 
 ### Postgres Inputs
 
-| Name                | Description                                                                 | Default value                          | Required |
-| ------------------- | --------------------------------------------------------------------------- | -------------------------------------- | -------- |
-| POSTGRES_HOST       | Postgres FQDN url                                                           | localhost                              | yes      |
-| POSTGRES_DB         | Postgres database name                                                      | labkey                                 | yes      |
-| POSTGRES_USER       | Postgres user's username                                                    | labkey                                 | yes      |
-| POSTGRES_SVR_LOCAL  | Flag to trigger install/config of local postgres server - "TRUE" or "FALSE" | FALSE                                  | yes      |
-| POSTGRES_PORT       | Postgres TCP Port                                                           | 5432                                   | yes      |
-| POSTGRES_PARAMETERS | Additional postgres parameters                                              | NULL                                   | no       |
-| POSTGRES_PASSWORD   | Postgres user's password                                                    | Randomly generated if none is provided | yes      |
+| Name                           | Description                                                                 | Default value                          | Required |
+|--------------------------------|-----------------------------------------------------------------------------|----------------------------------------|----------|
+| POSTGRES_DB                    | Postgres database name                                                      | labkey                                 | yes      |
+| POSTGRES_HOST                  | Postgres FQDN url                                                           | localhost                              | yes      |
+| POSTGRES_PARAMETERS            | Additional postgres parameters                                              | NULL                                   | no       |
+| POSTGRES_PASSWORD              | Postgres user's password                                                    | Randomly generated if none is provided | yes      |
+| POSTGRES_PORT                  | Postgres TCP Port                                                           | 5432                                   | yes      |
+| POSTGRES_SVR_LOCAL             | Flag to trigger install/config of local postgres server - "TRUE" or "FALSE" | FALSE                                  | yes      |
+| POSTGRES_USER                  | Postgres user's username                                                    | labkey                                 | yes      |
+| POSTGRES_PROVISION_REMOTE_DB   | Flag to trigger provisioning of remote database - "TRUE" or "FALSE"         | FALSE                                  | no       |
+| POSTGRES_REMOTE_ADMIN_PASSWORD | Postgres Remote Admin Password                                              | NULL                                   | no       |
+| POSTGRES_REMOTE_ADMIN_USER     | Postgres Remote Admin username                                              | postgres_admin                         | no       |
 
 ### SMTP Inputs
 
 | Name          | Description                                    | Default value | Required |
-| ------------- | ---------------------------------------------- | ------------- | -------- |
+|---------------|------------------------------------------------|---------------|----------|
 | SMTP_HOST     | SMTP Hostname                                  | localhost     | no       |
 | SMTP_USER     | SMTP Username for authenticated SMTP send      | NULL          | no       |
 | SMTP_PORT     | SMTP Port                                      | NULL          | no       |
@@ -169,7 +172,7 @@ The following tables list the available input variables and default values. In t
 ### ALT File Root Inputs
 
 | Name                      | Description                                                   | Default           | Required |
-| ------------------------- | ------------------------------------------------------------- | ----------------- | -------- |
+|---------------------------|---------------------------------------------------------------|-------------------|----------|
 | ALT_FILE_ROOT_HEAD        | Default file root path                                        | /media/ebs_volume | no       |
 | COOKIE_ALT_FILE_ROOT_HEAD | Cookie file to designate if the ebs volume has been formatted | .ebs_volume       | no       |
 
