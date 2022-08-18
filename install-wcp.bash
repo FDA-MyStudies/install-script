@@ -80,8 +80,8 @@ function step_wcp_default_envs() {
   WCP_PRIVACY_POLICY_URL="${WCP_PRIVACY_POLICY_URL:-}"
   WCP_REGISTRATION_URL="${WCP_REGISTRATION_URL:-reg.localhost}"
   WCP_TERMS_URL="${WCP_TERMS_URL:-}"
-  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/22.7.1/wcp_full-22.7.1-41.zip}"
-  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-22.7.1-41.zip}"
+  WCP_DIST_URL="${WCP_DIST_URL:-https://github.com/FDA-MyStudies/WCP/releases/download/22.7.2/wcp_full-22.7.2-42.zip}"
+  WCP_DIST_FILENAME="${WCP_DIST_FILENAME:-wcp_full-22.7.2-42.zip}"
   WCP_SQL_SCRIPT_URL="${WCP_SQL_SCRIPT_URL:-https://raw.githubusercontent.com/FDA-MyStudies/WCP/develop/sqlscript/HPHC_My_Studies_DB_Create_Script.sql}"
   WCP_SQL_FILENAME="${WCP_SQL_FILENAME:-My_Studies_DB_Create_Script.sql}"
 

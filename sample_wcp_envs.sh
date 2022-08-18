@@ -4,9 +4,7 @@
 export LABKEY_INSTALL_SKIP_MAIN=1
 export LABKEY_INSTALL_SKIP_TOMCAT_SERVICE_EMBEDDED_STEP=1
 
-# until the install-script is publicly available you need to provide a github url with auth token
-#export LABKEY_INSTALL_SCRIPT_URL=""
-
+# general path configuration settings
 export LABKEY_APP_HOME="/labkey"
 export LABKEY_FILES_ROOT="/labkey/labkey/files"
 export LABKEY_LOG_DIR="/labkey/apps/tomcat/logs"
@@ -19,6 +17,7 @@ export TOMCAT_TMP_DIR="${TOMCAT_TMP_DIR:-${LABKEY_APP_HOME}/tomcat-tmp}"
 export MYSQL_SVR_LOCAL="TRUE"
 
 # If no passwords are supplied the install script generates passwords - which can cause password de-sync issues if the install fails
+# supplying them here can help overcome those types of issues
 #export MYSQL_PASSWORD="your_complex_password_here"
 #export MYSQL_ROOT_PASSWORD="your_complex_password_here"
 
