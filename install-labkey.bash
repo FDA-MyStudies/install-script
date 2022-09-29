@@ -401,9 +401,9 @@ function step_os_prereqs() {
       ) >"$NewFile"
     fi
 
-    sudo apt-get update
+    sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
     sudo apt-get install -y "$ADOPTOPENJDK_VERSION" libtcnative-1 libapr1
-    sudo apt-get -y dist-upgrade
+    sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
     ;;
 
   _*)
@@ -692,10 +692,10 @@ function step_postgres_configure() {
 
     # Import the repository signing key:
     # wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    sudo apt-get update
+    sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
     # Postgresql 12 included in Ubuntu 20.04
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo apt-get -y install postgresql-12
+      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-12
       # Not needed for conical postgresql package
       #if [ ! -f /var/lib/postgresql/12/main/PG_VERSION ]; then
       #  /usr/pgsql-11/bin/postgresql-11-setup initdb
@@ -711,7 +711,7 @@ function step_postgres_configure() {
       sudo systemctl restart postgresql
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo apt-get -y install postgresql-client-12
+      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-12
       console_msg "Postgres Client Installed ..."
     fi
 

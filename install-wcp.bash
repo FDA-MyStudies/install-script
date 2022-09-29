@@ -461,8 +461,8 @@ function step_mysql_config() {
     else
       wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
       sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.22-1_all.deb
-      sudo apt-get update
-      sudo apt-get -y install -f unzip mysql-client
+      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install -f unzip mysql-client
       console_msg "MYSQL Client Installed ..."
     fi
 
