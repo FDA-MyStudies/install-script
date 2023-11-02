@@ -977,8 +977,8 @@ function step_tomcat_service_standard() {
 				Restart=on-failure
 				RestartSec=2
 
-				User=tomcat
-				Group=tomcat
+				User=$TOMCAT_USERNAME
+				Group=$TOMCAT_USERNAME
 
 				[Install]
 				WantedBy=multi-user.target
