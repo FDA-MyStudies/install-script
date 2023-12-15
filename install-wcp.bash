@@ -439,8 +439,8 @@ function step_mysql_config() {
     if [ "$MYSQL_SVR_LOCAL" == "TRUE" ]; then
 
       # get mysql repo
-      wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
-      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.22-1_all.deb
+      wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb
+      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb
       # force update after repo add
       sudo apt update
 
@@ -459,8 +459,8 @@ function step_mysql_config() {
       console_msg "MYSQL Server and Client Installed ..."
 
     else
-      wget https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb
-      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.22-1_all.deb
+      wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb
+      sudo DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb
       sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
       sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install -f unzip mysql-client
       console_msg "MYSQL Client Installed ..."
