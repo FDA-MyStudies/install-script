@@ -906,7 +906,7 @@ function step_tomcat_service_embedded() {
   fi
 
 }
-
+# shellcheck disable=SC2120
 function step_tomcat_service_standard() {
   if _skip_step "${FUNCNAME[0]/step_/}"; then return 0; fi
 
@@ -960,6 +960,30 @@ function step_tomcat_service_standard() {
       fi
     fi
 
+    # Create Labkey Service script - prevents unexpected shutdown of LabKey service during upgrades etc.
+    NewScript="$TOMCAT_INSTALL_HOME/bin/labkey_service.sh"
+    (
+      /bin/cat <<-HERE_LABKEY_SERVICE_SCRIPT
+		#!/usr/bin/env bash
+
+		OPERATION="\$1"
+
+		if [[ "\$OPERATION" == 'stop' ]]; then
+			# wait for labkey upgrade to complete before stopping tomcat
+			LOCKFILE="$LABKEY_INSTALL_HOME/labkeyUpgradeLockFile"
+
+			while [ -f "\$LOCKFILE" ]; do
+				sleep 3
+			done
+
+		fi
+
+		"$TOMCAT_INSTALL_HOME/bin/catalina.sh" \$@
+
+		HERE_LABKEY_SERVICE_SCRIPT
+    ) >"$NewScript"
+      chmod 755 "$NewScript"
+
     # Create Standard Tomcat Systemd service file -
 
     #create tomcat_lk systemd service file
@@ -982,8 +1006,8 @@ function step_tomcat_service_standard() {
 				OOMScoreAdjust=-500
 
 
-				ExecStart=$TOMCAT_INSTALL_HOME/bin/catalina.sh start
-				ExecStop=$TOMCAT_INSTALL_HOME/bin/catalina.sh stop
+				ExecStart=$TOMCAT_INSTALL_HOME/bin/labkey_service.sh start
+				ExecStop=$TOMCAT_INSTALL_HOME/bin/labkey_service.sh stop
 				SuccessExitStatus=0 143
 				Restart=on-failure
 				RestartSec=2
