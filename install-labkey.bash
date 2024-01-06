@@ -654,8 +654,7 @@ function step_postgres_configure() {
     fi
     ;;
 
-  \
-    _rhel)
+  _rhel)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
       sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
       # Disable the built-in PostgreSQL module:
@@ -982,7 +981,7 @@ function step_tomcat_service_standard() {
 
 		HERE_LABKEY_SERVICE_SCRIPT
     ) >"$NewScript"
-      chmod 755 "$NewScript"
+    chmod 755 "$NewScript"
 
     # Create Standard Tomcat Systemd service file -
 
