@@ -695,7 +695,13 @@ function step_postgres_configure() {
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
     # Postgresql 12 included in Ubuntu 20.04
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-12
+      if [ "$(platform_version)" == "20.04" ]; then
+        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-12
+      fi
+      # Postgresql 14 included in Ubuntu 22.04
+      if [ "$(platform_version)" == "22.04" ]; then
+        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-14
+      fi
       # Not needed for conical postgresql package
       #if [ ! -f /var/lib/postgresql/12/main/PG_VERSION ]; then
       #  /usr/pgsql-11/bin/postgresql-11-setup initdb
@@ -711,7 +717,12 @@ function step_postgres_configure() {
       sudo systemctl restart postgresql
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-12
+      if [ "$(platform_version)" == "20.04" ]; then
+        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-12
+      fi
+      if [ "$(platform_version)" == "22.04" ]; then
+        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-14
+      fi
       console_msg "Postgres Client Installed ..."
     fi
 
