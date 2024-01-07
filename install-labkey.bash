@@ -237,6 +237,8 @@ function step_default_envs() {
   POSTGRES_PROVISION_REMOTE_DB="${POSTGRES_PROVISION_REMOTE_DB:-FALSE}"
   POSTGRES_REMOTE_ADMIN_USER="${POSTGRES_REMOTE_ADMIN_USER:-postgres_admin}"
   POSTGRES_REMOTE_ADMIN_PASSWORD="${POSTGRES_REMOTE_ADMIN_PASSWORD:-}"
+  # two digit Postgresql version other than distro-repo default - this is supported for Ubuntu only - example values "15" or "16"
+  POSTGRES_VERSION="${POSTGRES_VERSION:-}"
 
   # smtp env vars
   SMTP_HOST="${SMTP_HOST:-localhost}"
@@ -684,43 +686,58 @@ function step_postgres_configure() {
     ;;
 
   _ubuntu)
-    # TODO add platform version for 20.04 only
-    # for version 11
-    # Create the file repository configuration:
-    # sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-
-    # Import the repository signing key:
-    # wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
-    # Postgresql 12 included in Ubuntu 20.04
+    # Postgresql 12 included in Ubuntu 20.04 APT repo - otherwise install from Postgresql repos
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
       if [ "$(platform_version)" == "20.04" ]; then
-        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-12
+        if [[ -n $POSTGRES_VERSION && $POSTGRES_VERSION != "12" ]]; then
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install "postgresql-$POSTGRES_VERSION"
+        else
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-12
+        fi
       fi
-      # Postgresql 14 included in Ubuntu 22.04
+      # Postgresql 14 included in Ubuntu 22.04 APT repo - otherwise install from Postgresql repos
       if [ "$(platform_version)" == "22.04" ]; then
-        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-14
+        if [[ -n $POSTGRES_VERSION && $POSTGRES_VERSION != "14" ]]; then
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install "postgresql-$POSTGRES_VERSION"
+        else
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-14
+        fi
       fi
-      # Not needed for conical postgresql package
-      #if [ ! -f /var/lib/postgresql/12/main/PG_VERSION ]; then
-      #  /usr/pgsql-11/bin/postgresql-11-setup initdb
-      #fi
 
       sudo systemctl enable postgresql
       sudo systemctl start postgresql
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      # This may not be needed on ubuntu
-      #sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /etc/postgresql/12/main/pg_hba.conf
       sudo systemctl restart postgresql
       console_msg "Postgres Server and Client Installed ..."
     else
       if [ "$(platform_version)" == "20.04" ]; then
-        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-12
+        if [[ -n $POSTGRES_VERSION && $POSTGRES_VERSION != "12" ]]; then
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install "postgresql-client-$POSTGRES_VERSION"
+        else
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-12
+        fi
       fi
       if [ "$(platform_version)" == "22.04" ]; then
-        sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-14
+        if [[ -n $POSTGRES_VERSION && $POSTGRES_VERSION != "14" ]]; then
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install "postgresql-client-$POSTGRES_VERSION"
+        else
+          sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y install postgresql-client-14
+        fi
       fi
       console_msg "Postgres Client Installed ..."
     fi
