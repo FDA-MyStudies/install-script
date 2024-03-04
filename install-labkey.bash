@@ -390,21 +390,17 @@ function step_os_prereqs() {
   _ubuntu)
     # ubuntu stuff here
     export DEBIAN_FRONTEND=noninteractive
+    sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+    sudo apt-get install -y libtcnative-1 libapr1 wget apt-transport-https gpg
     TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptium repo
     DEB_JDK_REPO="https://packages.adoptium.net/artifactory/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
-      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -
-      NewFile="/etc/apt/sources.list.d/adoptium.list"
-      (
-        /bin/cat <<-ADOPTOPENJDK_APT_REPO
-				deb $DEB_JDK_REPO $(lsb_release -sc) main
-			ADOPTOPENJDK_APT_REPO
-      ) >"$NewFile"
+      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null
+      echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
     fi
-
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
-    sudo apt-get install -y "$ADOPTOPENJDK_VERSION" libtcnative-1 libapr1
+    sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
     ;;
 
