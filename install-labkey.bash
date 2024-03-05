@@ -448,107 +448,179 @@ function step_create_app_properties() {
     NewFile="${LABKEY_INSTALL_HOME}/application.properties"
     (
       /bin/cat <<-APP_PROPS_HERE
-						# debug=true
-						# trace=true
-
-						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
 
 						server.port=${LABKEY_HTTPS_PORT}
 
-						spring.main.log-startup-info=true
-
-						spring.main.banner-mode=off
-
-						spring.application.name=labkey
-						server.servlet.application-display-name=labkey
-
-						logging.level.root=WARN
-
-						# custom tomcat group
-						logging.group.tomcat=org.apache.catalina,org.apache.coyote,org.apache.tomcat
-						logging.level.tomcat=${LOG_LEVEL_TOMCAT}
-
-						logging.level.org.apache.coyote.http2=OFF
-
-						# default groups
-						logging.level.web=${LOG_LEVEL_SPRING_WEB}
-						logging.level.sql=${LOG_LEVEL_SQL}
-
-						logging.level.net.sf.ehcache=ERROR
-						logging.level.org.springframework.boot=INFO
-
-						logging.level.org.springframework.jdbc.core=WARN
-						logging.level.org.hibernate.SQL=WARN
-						logging.level.org.jooq.tools.LoggerListener=WARN
-						logging.level.org.springframework.core.codec=WARN
-						logging.level.org.springframework.http=WARN
-						logging.level.org.springframework.web=WARN
-						logging.level.org.springframework.boot.actuate.endpoint.web=WARN
-						logging.level.org.springframework.boot.web.servlet.ServletContextInitializerBeans=WARN
-						logging.level.org.springframework.boot=WARN
-
-						logging.level.org.apache.jasper.servlet.TldScanner=WARN
-						logging.level.org.apache.tomcat.util.digester.Digester=INFO
-
-						context.dataSourceName[0]=jdbc/labkeyDataSource
-						context.driverClassName[0]=org.postgresql.Driver
-						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
-						context.username[0]=${POSTGRES_USER}
-						context.password[0]=${POSTGRES_PASSWORD}
-
-						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
-						server.tomcat.accesslog.enabled=true
-						server.tomcat.accesslog.prefix=access
-						server.tomcat.accesslog.suffix=.log
-						server.tomcat.accesslog.rotate=false
-						server.tomcat.accesslog.pattern=%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t "%r" %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s %q
-
-						server.http2.enabled=true
 						server.ssl.enabled=true
-
-						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
 						server.ssl.enabled-protocols=${TOMCAT_SSL_ENABLED_PROTOCOLS}
 						server.ssl.protocol=${TOMCAT_SSL_PROTOCOL}
-
 						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
 						server.ssl.key-store=${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}
 						server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
 						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT}
+						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
 
+						# HTTP-only port for servers that need to handle both HTTPS (configure via server.port and server.ssl above) and HTTP
+						#context.httpPort=8080
+
+						# Database connections. All deployments need a labkeyDataSource as their primary database. Add additional external
+						# data sources by specifying the required properties (at least driverClassName, url, username, and password)
+						# with a prefix of context.resources.jdbc.<dataSourceName>.
+						context.resources.jdbc.labkeyDataSource.type=javax.sql.DataSource
+						context.resources.jdbc.labkeyDataSource.driverClassName=org.postgresql.Driver
+						context.resources.jdbc.labkeyDataSource.url=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
+						context.resources.jdbc.labkeyDataSource.username=${POSTGRES_USER}
+						context.resources.jdbc.labkeyDataSource.password=${POSTGRES_PASSWORD}
+						context.resources.jdbc.labkeyDataSource.maxTotal=50
+						context.resources.jdbc.labkeyDataSource.maxIdle=10
+						context.resources.jdbc.labkeyDataSource.maxWaitMillis=120000
+						context.resources.jdbc.labkeyDataSource.accessToUnderlyingConnectionAllowed=true
+						context.resources.jdbc.labkeyDataSource.validationQuery=SELECT 1
+						#context.resources.jdbc.labkeyDataSource.logQueries=true
+						#context.resources.jdbc.labkeyDataSource.displayName=Alternate Display Name
+
+						#context.resources.jdbc.@@extraJdbcDataSource@@.driverClassName=@@extraJdbcDriverClassName@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.url=@@extraJdbcUrl@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.username=@@extraJdbcUsername@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.password=@@extraJdbcPassword@@
+
+						#useLocalBuild#context.webAppLocation=@@pathToServer@@/build/deploy/labkeyWebapp
 						context.EncryptionKey=${LABKEY_MEK}
+
+						# By default, we deploy to the root context path. However, some servers have historically used /labkey or even /cpas
+						#context.contextPath=/labkey
+
+						# Using a legacy context path provides backwards compatibility with old deployments. A typical use case would be to
+						# deploy to the root context (the default) and configure /labkey as the legacy path. GETs will be redirected.
+						# All other methods (POSTs, PUTs, etc) will be handled server-side via a servlet forward.
+						#context.legacyContextPath=/labkey
+
+						# Other webapps to be deployed, most commonly to deliver a set of static files. The context path to deploy into is the
+						# property name after the "context.additionalWebapps." prefix, and the value is the location of the webapp on disk
+						#context.additionalWebapps.firstContextPath=/my/webapp/path
+						#context.additionalWebapps.secondContextPath=/my/other/webapp/path
+
+						#context.oldEncryptionKey=
+						#context.requiredModules=
+						#context.pipelineConfig=/path/to/pipeline/config/dir
 						context.serverGUID=${LABKEY_GUID}
-
-						#
-						# as of time of writing, this cannot be changed via app props but is needed for
-						# management.endpoints.web.base-path below
-						#
-						server.servlet.context-path=/_
-
-						server.error.whitelabel.enabled=false
+						#context.bypass2FA=true
+						#context.workDirLocation=/path/to/desired/workDir
 
 						mail.smtpHost=${SMTP_HOST}
-						mail.smtpUser=${SMTP_USER}
 						mail.smtpPort=${SMTP_PORT}
-						mail.smtpPassword=${SMTP_PASSWORD}
-						mail.smtpAuth=${SMTP_AUTH}
+						mail.smtpUser=${SMTP_USER}
 						mail.smtpFrom=${SMTP_FROM}
+						mail.smtpPassword=${SMTP_PASSWORD}
 						mail.smtpStartTlsEnable=${SMTP_STARTTLS}
+						#mail.smtpSocketFactoryClass=@@smtpSocketFactoryClass@@
+						mail.smtpAuth=${SMTP_AUTH}
 
-						management.endpoints.web.base-path=/
+						# Optional - JMS configuration for remote ActiveMQ message management for distributed pipeline jobs
+						# https://www.labkey.org/Documentation/wiki-page.view?name=jmsQueue
+						#context.resources.jms.ConnectionFactory.type=org.apache.activemq.ActiveMQConnectionFactory
+						#context.resources.jms.ConnectionFactory.factory=org.apache.activemq.jndi.JNDIReferenceFactory
+						#context.resources.jms.ConnectionFactory.description=JMS Connection Factory
+						# Use an in-process ActiveMQ queue
+						#context.resources.jms.ConnectionFactory.brokerURL=vm://localhost?broker.persistent=false&broker.useJmx=false
+						# Use an out-of-process ActiveMQ queue
+						#context.resources.jms.ConnectionFactory.brokerURL=tcp://localhost:61616
+						#context.resources.jms.ConnectionFactory.brokerName=LocalActiveMQBroker
 
+						# Optional - LDAP configuration for LDAP group/user synchronization
+						# https://www.labkey.org/Documentation/wiki-page.view?name=LDAP_sync
+						#context.resources.ldap.ConfigFactory.type=org.labkey.premium.ldap.LdapConnectionConfigFactory
+						#context.resources.ldap.ConfigFactory.factory=org.labkey.premium.ldap.LdapConnectionConfigFactory
+						#context.resources.ldap.ConfigFactory.host=myldap.mydomain.com
+						#context.resources.ldap.ConfigFactory.port=389
+						#context.resources.ldap.ConfigFactory.principal=cn=read_user
+						#context.resources.ldap.ConfigFactory.credentials=read_user_password
+						#context.resources.ldap.ConfigFactory.useTls=false
+						#context.resources.ldap.ConfigFactory.useSsl=false
+						#context.resources.ldap.ConfigFactory.sslProtocol=SSLv3
+
+						#useLocalBuild#spring.devtools.restart.additional-paths=@@pathToServer@@/build/deploy/modules,@@pathToServer@@/build/deploy/embedded/config
+
+						# HTTP session timeout for users - defaults to 30 minutes
+						#server.servlet.session.timeout=30m
+
+
+						#Enable shutdown endpoint
+						management.endpoint.shutdown.enabled=false
+						# turn off other endpoints
 						management.endpoints.enabled-by-default=false
-						management.endpoint.health.enabled=true
-						management.endpoint.info.enabled=true
-
-						management.endpoints.web.exposure.include=health,info
-						management.endpoints.jmx.exposure.exclude=*
+						# allow access via http
+						management.endpoints.web.exposure.include=*
+						# Use a separate port for management endpoints. Required if LabKey is using default (ROOT) context path
+						#management.server.port=@@shutdownPort@@
 
 						management.endpoint.env.keys-to-sanitize=.*user.*,.*pass.*,secret,key,token,.*credentials.*,vcap_services,sun.java.command,.*key-store.*
 
-						info.labkey.version=${LABKEY_VERSION}
-						info.labkey.distribution=${LABKEY_DISTRIBUTION}
+						# Don't show the Spring banner on startup
+						spring.main.banner-mode=off
+						#logging.config=path/to/alternative/log4j2.xml
 
-						server.tomcat.max-threads=50
+						# Optional - JMS configuration for remote ActiveMQ message management for distributed pipeline jobs
+						# https://www.labkey.org/Documentation/wiki-page.view?name=jmsQueue
+						#context.resources.jms.name=jms/ConnectionFactory
+						#context.resources.jms.type=org.apache.activemq.ActiveMQConnectionFactory
+						#context.resources.jms.factory=org.apache.activemq.jndi.JNDIReferenceFactory
+						#context.resources.jms.description=JMS Connection Factory
+						#context.resources.jms.brokerURL=vm://localhost?broker.persistent=false&broker.useJmx=false
+						#context.resources.jms.brokerName=LocalActiveMQBroker
+
+						# Turn on JSON-formatted HTTP access logging to stdout. See issue 48565
+						# https://tomcat.apache.org/tomcat-9.0-doc/config/valve.html#JSON_Access_Log_Valve
+						#jsonaccesslog.enabled=true
+
+						# Optional configuration, modeled on the non-JSON Spring Boot properties
+						# https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.server.server.tomcat.accesslog.buffered
+						#jsonaccesslog.pattern=%h %t %m %U %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s
+						#jsonaccesslog.condition-if=attributeName
+						#jsonaccesslog.condition-unless=attributeName
+
+						# Define one or both of 'csp.report' and 'csp.enforce' to enable Content Security Policy (CSP) headers
+						# Do not copy-and-paste these examples for any production environment without understanding the meaning of each directive!
+
+						# example usage 1 - very strict, disallows 'external' websites, disallows unsafe-inline, but only reports violations (does not enforce)
+
+						#csp.report=\\
+						#    default-src 'self';\\
+						#    connect-src 'self' \${LABKEY.ALLOWED.CONNECTIONS} ;\\
+						#    object-src 'none' ;\\
+						#    style-src 'self' 'unsafe-inline' ;\\
+						#    img-src 'self' data: ;\\
+						#    font-src 'self' data: ;\\
+						#    script-src 'unsafe-eval' 'strict-dynamic' 'nonce-\${REQUEST.SCRIPT.NONCE}';\\
+						#    base-uri 'self' ;\\
+						#    upgrade-insecure-requests ;\\
+						#    frame-ancestors 'self' ;\\
+						#    report-uri https://www.labkey.org/admin-contentsecuritypolicyreport.api?\${CSP.REPORT.PARAMS} ;
+
+						# example usage 2 - less strict but enforces directives, (NOTE: unsafe-inline is still required for many modules)
+
+						#csp.enforce=\\
+						#    default-src 'self' https: ;\\
+						#    connect-src 'self' https: \${LABKEY.ALLOWED.CONNECTIONS};\\
+						#    object-src 'none' ;\\
+						#    style-src 'self' https: 'unsafe-inline' ;\\
+						#    img-src 'self' data: ;\\
+						#    font-src 'self' data: ;\\
+						#    script-src 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' 'nonce-\${REQUEST.SCRIPT.NONCE}';\\
+						#    base-uri 'self' ;\\
+						#    upgrade-insecure-requests ;\\
+						#    frame-ancestors 'self' ;\\
+						#    report-uri  https://www.labkey.org/admin-contentsecuritypolicyreport.api?\${CSP.REPORT.PARAMS} ;
+
+						# Use a non-temp directory for tomcat
+						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
+
+						# Enable tomcat access log
+						server.tomcat.accesslog.enabled=true
+						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
+						server.tomcat.accesslog.pattern=%h %l %u %t "%r" %s %b %D %S %I "%{Referrer}i" "%{User-Agent}i" %{LABKEY.username}s
+
+
 
 			APP_PROPS_HERE
     ) >"$NewFile"
