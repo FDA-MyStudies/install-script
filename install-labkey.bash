@@ -665,7 +665,8 @@ function step_postgres_configure() {
 
   case "_$(platform)" in
   _amzn)
-    # Install the Postgresql repository RPM:
+    # Install the Postgresql repository RPM
+    # note this method is required for AMZN linux and supports PG versions 12-15 - v16 not supported by PG repo
     if [[ -z $POSTGRES_VERSION ]]; then
       DEFAULT_POSTGRES_VERSION="15"
       else
