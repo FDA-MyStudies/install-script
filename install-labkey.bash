@@ -665,32 +665,48 @@ function step_postgres_configure() {
 
   case "_$(platform)" in
   _amzn)
+    # Install the Postgresql repository RPM:
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+      else
+        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+        fi
+
+    if [ ! -f "/etc/yum.repos.d/pgdg.repo" ]; then
+      NewPGRepoFile="/etc/yum.repos.d/pgdg.repo"
+      (
+       /bin/cat <<-PG_REPO_HERE
+				[pgdg$DEFAULT_POSTGRES_VERSION]
+				name=PostgreSQL $DEFAULT_POSTGRES_VERSION for RHEL/CentOS 7 - x86_64
+				baseurl=https://download.postgresql.org/pub/repos/yum/$DEFAULT_POSTGRES_VERSION/redhat/rhel-7-x86_64
+				enabled=1
+				gpgcheck=0
+
+				PG_REPO_HERE
+        ) >"$NewPGRepoFile"
+      fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo amazon-linux-extras enable postgresql11 epel
-      #amazon-linux-extras install epel
       sudo yum clean metadata
       sudo yum update -y
-      sudo yum install epel-release postgresql.x86_64 postgresql-server.x86_64 -y
+      sudo yum install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
       # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
       sudo yum install tomcat-native.x86_64 apr fontconfig -y
 
-      if [ ! -f /var/lib/pgsql/data/PG_VERSION ]; then
-        /usr/bin/postgresql-setup --initdb
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql
-      sudo systemctl start postgresql
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
-      sudo systemctl restart postgresql
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo amazon-linux-extras enable postgresql11 epel
-      #amazon-linux-extras install epel
       sudo yum clean metadata
-      sudo yum install epel-release postgresql.x86_64 -y
+      sudo yum install "postgresql-client-$DEFAULT_POSTGRES_VERSION" -y
       # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
       sudo yum install tomcat-native.x86_64 apr fontconfig -y
       console_msg "Postgres Client Installed ..."
