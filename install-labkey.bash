@@ -237,7 +237,6 @@ function step_default_envs() {
   POSTGRES_PROVISION_REMOTE_DB="${POSTGRES_PROVISION_REMOTE_DB:-FALSE}"
   POSTGRES_REMOTE_ADMIN_USER="${POSTGRES_REMOTE_ADMIN_USER:-postgres_admin}"
   POSTGRES_REMOTE_ADMIN_PASSWORD="${POSTGRES_REMOTE_ADMIN_PASSWORD:-}"
-  # two digit Postgresql version other than distro-repo default - this is supported for Ubuntu only - example values "15" or "16"
   POSTGRES_VERSION="${POSTGRES_VERSION:-}"
 
   # smtp env vars
