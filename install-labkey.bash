@@ -404,7 +404,7 @@ function step_os_prereqs() {
     # Add adoptium repo
     DEB_JDK_REPO="https://packages.adoptium.net/artifactory/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
-      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null
+      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg >/dev/null
       echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
     fi
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
@@ -677,14 +677,14 @@ function step_postgres_configure() {
     # note this method is required for AMZN linux and supports PG versions 12-15 - v16 not supported by PG repo
     if [[ -z $POSTGRES_VERSION ]]; then
       DEFAULT_POSTGRES_VERSION="15"
-      else
-        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
-        fi
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+    fi
 
     if [ ! -f "/etc/yum.repos.d/pgdg.repo" ]; then
       NewPGRepoFile="/etc/yum.repos.d/pgdg.repo"
       (
-       /bin/cat <<-PG_REPO_HERE
+        /bin/cat <<-PG_REPO_HERE
 				[pgdg$DEFAULT_POSTGRES_VERSION]
 				name=PostgreSQL $DEFAULT_POSTGRES_VERSION for RHEL/CentOS 7 - x86_64
 				baseurl=https://download.postgresql.org/pub/repos/yum/$DEFAULT_POSTGRES_VERSION/redhat/rhel-7-x86_64
@@ -692,8 +692,8 @@ function step_postgres_configure() {
 				gpgcheck=0
 
 				PG_REPO_HERE
-        ) >"$NewPGRepoFile"
-      fi
+      ) >"$NewPGRepoFile"
+    fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
       sudo yum clean metadata
@@ -732,9 +732,9 @@ function step_postgres_configure() {
 
     if [[ -z $POSTGRES_VERSION ]]; then
       DEFAULT_POSTGRES_VERSION="15"
-      else
-        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
-        fi
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+    fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
       sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
@@ -767,9 +767,9 @@ function step_postgres_configure() {
 
     if [[ -z $POSTGRES_VERSION ]]; then
       DEFAULT_POSTGRES_VERSION="15"
-      else
-        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
-        fi
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+    fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
       sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
