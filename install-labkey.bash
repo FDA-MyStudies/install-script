@@ -336,31 +336,40 @@ function step_os_prereqs() {
     sudo yum install -y "$ADOPTOPENJDK_VERSION"
     ;;
 
-  _centos)
-    sudo yum update -y
-    sudo yum install epel-release vim wget -y
+  _almalinux)
+    sudo dnf update -y
+    sudo dnf install epel-release vim wget -y
+    # - set selinux to permissive mode - SELinux Settings for Tomcat are complicated and beyond scope of this script
+    console_msg "Checking SELinux Mode...."
+    SEL_STATUS="$(/sbin/getenforce)"
+    console_msg "SELinux Mode is: $SEL_STATUS..."
+    if [[ $SEL_STATUS == "Enforcing" ]]; then
+      console_msg "Setting SELinux Status to Permissive"
+      sudo /sbin/setenforce 0
+      sudo sed -i 's/ELINUX=enforcing/ELINUX=disabled/g' /etc/selinux/config
+    fi
     # Add adoptium repo
     if [ ! -f "/etc/yum.repos.d/adoptium.repo" ]; then
       NewFile="/etc/yum.repos.d/adoptium.repo"
       (
-        /bin/cat <<-AMZN_JDK_HERE
+        /bin/cat <<-ALMA_JDK_HERE
 				[Adoptium]
 				name=Adoptium
-				baseurl=https://packages.adoptium.net/artifactory/rpm/centos/\$releasever/\$basearch
+				baseurl=https://packages.adoptium.net/artifactory/rpm/rhel/\$releasever/\$basearch
 				enabled=1
 				gpgcheck=1
 				gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
-			AMZN_JDK_HERE
+			ALMA_JDK_HERE
       ) >"$NewFile"
     fi
-    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+    sudo dnf install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
     ;;
 
   _rhel)
-    sudo yum update -y
-    sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-    sudo yum repolist
-    sudo yum install vim wget -y
+    sudo dnf update -y
+    sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    sudo dnf repolist
+    sudo dnf install vim wget -y
     # - set selinux to permissive mode - SELinux Settings for Tomcat are complicated and beyond scope of this script
     console_msg "Checking SELinux Mode...."
     SEL_STATUS="$(/sbin/getenforce)"
@@ -384,7 +393,7 @@ function step_os_prereqs() {
 			RHEL_JDK_HERE
       ) >"$NewFile"
     fi
-    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+    sudo dnf install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
     ;;
 
   _ubuntu)
@@ -714,58 +723,72 @@ function step_postgres_configure() {
     fi
     ;;
 
-  _centos)
+  _almalinux)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
-      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-      sudo yum clean metadata
-      sudo yum update -y
+      sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+      sudo dnf -qy module disable postgresql
+      sudo dnf clean metadata
+      sudo dnf update -y
     fi
 
-    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo yum install -y postgresql11-server
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+      else
+        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+        fi
 
-      if [ ! -f /var/lib/pgsql/11/data/PG_VERSION ]; then
-        /usr/pgsql-11/bin/postgresql-11-setup initdb
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
+
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql-11
-      sudo systemctl start postgresql-11
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/11/data/pg_hba.conf
-      sudo systemctl restart postgresql-11
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo yum install -y postgresql11
+      sudo dnf clean metadata
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION" -y
       console_msg "Postgres Client Installed ..."
     fi
     ;;
 
   _rhel)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
-      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-      # Disable the built-in PostgreSQL module:
+      sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
       sudo dnf -qy module disable postgresql
-      sudo yum clean metadata
-      sudo yum update -y
+      sudo dnf clean metadata
+      sudo dnf update -y
     fi
 
-    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo yum install -y postgresql12-server
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+      else
+        DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+        fi
 
-      if [ ! -f /var/lib/pgsql/12/data/PG_VERSION ]; then
-        /usr/pgsql-12/bin/postgresql-12-setup initdb
+    if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
+
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql-12
-      sudo systemctl start postgresql-12
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/12/data/pg_hba.conf
-      sudo systemctl restart postgresql-12
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo yum install -y postgresql12
+      sudo dnf clean metadata
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION" -y
       console_msg "Postgres Client Installed ..."
     fi
     ;;
