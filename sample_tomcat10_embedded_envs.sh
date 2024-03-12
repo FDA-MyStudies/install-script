@@ -21,4 +21,3 @@ export TOMCAT_UID="757"
 
 # required for tomcat 10 embedded as the server/ folder will be removed in 24.3.x
 #export LABKEY_STARTUP_DIR="${LABKEY_INSTALL_HOME}/startup}"
-
