@@ -237,7 +237,6 @@ function step_default_envs() {
   POSTGRES_PROVISION_REMOTE_DB="${POSTGRES_PROVISION_REMOTE_DB:-FALSE}"
   POSTGRES_REMOTE_ADMIN_USER="${POSTGRES_REMOTE_ADMIN_USER:-postgres_admin}"
   POSTGRES_REMOTE_ADMIN_PASSWORD="${POSTGRES_REMOTE_ADMIN_PASSWORD:-}"
-  # two digit Postgresql version other than distro-repo default - this is supported for Ubuntu only - example values "15" or "16"
   POSTGRES_VERSION="${POSTGRES_VERSION:-}"
 
   # smtp env vars
@@ -336,31 +335,40 @@ function step_os_prereqs() {
     sudo yum install -y "$ADOPTOPENJDK_VERSION"
     ;;
 
-  _centos)
-    sudo yum update -y
-    sudo yum install epel-release vim wget -y
+  _almalinux)
+    sudo dnf update -y
+    sudo dnf install epel-release vim wget -y
+    # - set selinux to permissive mode - SELinux Settings for Tomcat are complicated and beyond scope of this script
+    console_msg "Checking SELinux Mode...."
+    SEL_STATUS="$(/sbin/getenforce)"
+    console_msg "SELinux Mode is: $SEL_STATUS..."
+    if [[ $SEL_STATUS == "Enforcing" ]]; then
+      console_msg "Setting SELinux Status to Permissive"
+      sudo /sbin/setenforce 0
+      sudo sed -i 's/ELINUX=enforcing/ELINUX=disabled/g' /etc/selinux/config
+    fi
     # Add adoptium repo
     if [ ! -f "/etc/yum.repos.d/adoptium.repo" ]; then
       NewFile="/etc/yum.repos.d/adoptium.repo"
       (
-        /bin/cat <<-AMZN_JDK_HERE
+        /bin/cat <<-ALMA_JDK_HERE
 				[Adoptium]
 				name=Adoptium
-				baseurl=https://packages.adoptium.net/artifactory/rpm/centos/\$releasever/\$basearch
+				baseurl=https://packages.adoptium.net/artifactory/rpm/rhel/\$releasever/\$basearch
 				enabled=1
 				gpgcheck=1
 				gpgkey=https://packages.adoptium.net/artifactory/api/gpg/key/public
-			AMZN_JDK_HERE
+			ALMA_JDK_HERE
       ) >"$NewFile"
     fi
-    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+    sudo dnf install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
     ;;
 
   _rhel)
-    sudo yum update -y
-    sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-    sudo yum repolist
-    sudo yum install vim wget -y
+    sudo dnf update -y
+    sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    sudo dnf repolist
+    sudo dnf install vim wget -y
     # - set selinux to permissive mode - SELinux Settings for Tomcat are complicated and beyond scope of this script
     console_msg "Checking SELinux Mode...."
     SEL_STATUS="$(/sbin/getenforce)"
@@ -384,27 +392,23 @@ function step_os_prereqs() {
 			RHEL_JDK_HERE
       ) >"$NewFile"
     fi
-    sudo yum install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
+    sudo dnf install -y tomcat-native apr fontconfig "$ADOPTOPENJDK_VERSION"
     ;;
 
   _ubuntu)
     # ubuntu stuff here
     export DEBIAN_FRONTEND=noninteractive
+    sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
+    sudo apt-get install -y libtcnative-1 libapr1 wget apt-transport-https gpg
     TOMCAT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
     # Add adoptium repo
     DEB_JDK_REPO="https://packages.adoptium.net/artifactory/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
-      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -
-      NewFile="/etc/apt/sources.list.d/adoptium.list"
-      (
-        /bin/cat <<-ADOPTOPENJDK_APT_REPO
-				deb $DEB_JDK_REPO $(lsb_release -sc) main
-			ADOPTOPENJDK_APT_REPO
-      ) >"$NewFile"
+      wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg >/dev/null
+      echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
     fi
-
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
-    sudo apt-get install -y "$ADOPTOPENJDK_VERSION" libtcnative-1 libapr1
+    sudo apt-get install -y "$ADOPTOPENJDK_VERSION"
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
     ;;
 
@@ -452,107 +456,179 @@ function step_create_app_properties() {
     NewFile="${LABKEY_INSTALL_HOME}/application.properties"
     (
       /bin/cat <<-APP_PROPS_HERE
-						# debug=true
-						# trace=true
-
-						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
 
 						server.port=${LABKEY_HTTPS_PORT}
 
-						spring.main.log-startup-info=true
-
-						spring.main.banner-mode=off
-
-						spring.application.name=labkey
-						server.servlet.application-display-name=labkey
-
-						logging.level.root=WARN
-
-						# custom tomcat group
-						logging.group.tomcat=org.apache.catalina,org.apache.coyote,org.apache.tomcat
-						logging.level.tomcat=${LOG_LEVEL_TOMCAT}
-
-						logging.level.org.apache.coyote.http2=OFF
-
-						# default groups
-						logging.level.web=${LOG_LEVEL_SPRING_WEB}
-						logging.level.sql=${LOG_LEVEL_SQL}
-
-						logging.level.net.sf.ehcache=ERROR
-						logging.level.org.springframework.boot=INFO
-
-						logging.level.org.springframework.jdbc.core=WARN
-						logging.level.org.hibernate.SQL=WARN
-						logging.level.org.jooq.tools.LoggerListener=WARN
-						logging.level.org.springframework.core.codec=WARN
-						logging.level.org.springframework.http=WARN
-						logging.level.org.springframework.web=WARN
-						logging.level.org.springframework.boot.actuate.endpoint.web=WARN
-						logging.level.org.springframework.boot.web.servlet.ServletContextInitializerBeans=WARN
-						logging.level.org.springframework.boot=WARN
-
-						logging.level.org.apache.jasper.servlet.TldScanner=WARN
-						logging.level.org.apache.tomcat.util.digester.Digester=INFO
-
-						context.dataSourceName[0]=jdbc/labkeyDataSource
-						context.driverClassName[0]=org.postgresql.Driver
-						context.url[0]=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
-						context.username[0]=${POSTGRES_USER}
-						context.password[0]=${POSTGRES_PASSWORD}
-
-						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
-						server.tomcat.accesslog.enabled=true
-						server.tomcat.accesslog.prefix=access
-						server.tomcat.accesslog.suffix=.log
-						server.tomcat.accesslog.rotate=false
-						server.tomcat.accesslog.pattern=%{org.apache.catalina.AccessLog.RemoteAddr}r %l %u %t "%r" %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s %q
-
-						server.http2.enabled=true
 						server.ssl.enabled=true
-
-						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
 						server.ssl.enabled-protocols=${TOMCAT_SSL_ENABLED_PROTOCOLS}
 						server.ssl.protocol=${TOMCAT_SSL_PROTOCOL}
-
 						server.ssl.key-alias=${TOMCAT_KEYSTORE_ALIAS}
 						server.ssl.key-store=${TOMCAT_KEYSTORE_BASE_PATH}/${TOMCAT_KEYSTORE_FILENAME}
 						server.ssl.key-store-password=${TOMCAT_KEYSTORE_PASSWORD}
 						server.ssl.key-store-type=${TOMCAT_KEYSTORE_FORMAT}
+						server.ssl.ciphers=${TOMCAT_SSL_CIPHERS}
 
+						# HTTP-only port for servers that need to handle both HTTPS (configure via server.port and server.ssl above) and HTTP
+						#context.httpPort=8080
+
+						# Database connections. All deployments need a labkeyDataSource as their primary database. Add additional external
+						# data sources by specifying the required properties (at least driverClassName, url, username, and password)
+						# with a prefix of context.resources.jdbc.<dataSourceName>.
+						context.resources.jdbc.labkeyDataSource.type=javax.sql.DataSource
+						context.resources.jdbc.labkeyDataSource.driverClassName=org.postgresql.Driver
+						context.resources.jdbc.labkeyDataSource.url=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_PARAMETERS}
+						context.resources.jdbc.labkeyDataSource.username=${POSTGRES_USER}
+						context.resources.jdbc.labkeyDataSource.password=${POSTGRES_PASSWORD}
+						context.resources.jdbc.labkeyDataSource.maxTotal=50
+						context.resources.jdbc.labkeyDataSource.maxIdle=10
+						context.resources.jdbc.labkeyDataSource.maxWaitMillis=120000
+						context.resources.jdbc.labkeyDataSource.accessToUnderlyingConnectionAllowed=true
+						context.resources.jdbc.labkeyDataSource.validationQuery=SELECT 1
+						#context.resources.jdbc.labkeyDataSource.logQueries=true
+						#context.resources.jdbc.labkeyDataSource.displayName=Alternate Display Name
+
+						#context.resources.jdbc.@@extraJdbcDataSource@@.driverClassName=@@extraJdbcDriverClassName@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.url=@@extraJdbcUrl@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.username=@@extraJdbcUsername@@
+						#context.resources.jdbc.@@extraJdbcDataSource@@.password=@@extraJdbcPassword@@
+
+						#useLocalBuild#context.webAppLocation=@@pathToServer@@/build/deploy/labkeyWebapp
 						context.EncryptionKey=${LABKEY_MEK}
+
+						# By default, we deploy to the root context path. However, some servers have historically used /labkey or even /cpas
+						#context.contextPath=/labkey
+
+						# Using a legacy context path provides backwards compatibility with old deployments. A typical use case would be to
+						# deploy to the root context (the default) and configure /labkey as the legacy path. GETs will be redirected.
+						# All other methods (POSTs, PUTs, etc) will be handled server-side via a servlet forward.
+						#context.legacyContextPath=/labkey
+
+						# Other webapps to be deployed, most commonly to deliver a set of static files. The context path to deploy into is the
+						# property name after the "context.additionalWebapps." prefix, and the value is the location of the webapp on disk
+						#context.additionalWebapps.firstContextPath=/my/webapp/path
+						#context.additionalWebapps.secondContextPath=/my/other/webapp/path
+
+						#context.oldEncryptionKey=
+						#context.requiredModules=
+						#context.pipelineConfig=/path/to/pipeline/config/dir
 						context.serverGUID=${LABKEY_GUID}
-
-						#
-						# as of time of writing, this cannot be changed via app props but is needed for
-						# management.endpoints.web.base-path below
-						#
-						server.servlet.context-path=/_
-
-						server.error.whitelabel.enabled=false
+						#context.bypass2FA=true
+						#context.workDirLocation=/path/to/desired/workDir
 
 						mail.smtpHost=${SMTP_HOST}
-						mail.smtpUser=${SMTP_USER}
 						mail.smtpPort=${SMTP_PORT}
-						mail.smtpPassword=${SMTP_PASSWORD}
-						mail.smtpAuth=${SMTP_AUTH}
+						mail.smtpUser=${SMTP_USER}
 						mail.smtpFrom=${SMTP_FROM}
+						mail.smtpPassword=${SMTP_PASSWORD}
 						mail.smtpStartTlsEnable=${SMTP_STARTTLS}
+						#mail.smtpSocketFactoryClass=@@smtpSocketFactoryClass@@
+						mail.smtpAuth=${SMTP_AUTH}
 
-						management.endpoints.web.base-path=/
+						# Optional - JMS configuration for remote ActiveMQ message management for distributed pipeline jobs
+						# https://www.labkey.org/Documentation/wiki-page.view?name=jmsQueue
+						#context.resources.jms.ConnectionFactory.type=org.apache.activemq.ActiveMQConnectionFactory
+						#context.resources.jms.ConnectionFactory.factory=org.apache.activemq.jndi.JNDIReferenceFactory
+						#context.resources.jms.ConnectionFactory.description=JMS Connection Factory
+						# Use an in-process ActiveMQ queue
+						#context.resources.jms.ConnectionFactory.brokerURL=vm://localhost?broker.persistent=false&broker.useJmx=false
+						# Use an out-of-process ActiveMQ queue
+						#context.resources.jms.ConnectionFactory.brokerURL=tcp://localhost:61616
+						#context.resources.jms.ConnectionFactory.brokerName=LocalActiveMQBroker
 
+						# Optional - LDAP configuration for LDAP group/user synchronization
+						# https://www.labkey.org/Documentation/wiki-page.view?name=LDAP_sync
+						#context.resources.ldap.ConfigFactory.type=org.labkey.premium.ldap.LdapConnectionConfigFactory
+						#context.resources.ldap.ConfigFactory.factory=org.labkey.premium.ldap.LdapConnectionConfigFactory
+						#context.resources.ldap.ConfigFactory.host=myldap.mydomain.com
+						#context.resources.ldap.ConfigFactory.port=389
+						#context.resources.ldap.ConfigFactory.principal=cn=read_user
+						#context.resources.ldap.ConfigFactory.credentials=read_user_password
+						#context.resources.ldap.ConfigFactory.useTls=false
+						#context.resources.ldap.ConfigFactory.useSsl=false
+						#context.resources.ldap.ConfigFactory.sslProtocol=SSLv3
+
+						#useLocalBuild#spring.devtools.restart.additional-paths=@@pathToServer@@/build/deploy/modules,@@pathToServer@@/build/deploy/embedded/config
+
+						# HTTP session timeout for users - defaults to 30 minutes
+						#server.servlet.session.timeout=30m
+
+
+						#Enable shutdown endpoint
+						management.endpoint.shutdown.enabled=false
+						# turn off other endpoints
 						management.endpoints.enabled-by-default=false
-						management.endpoint.health.enabled=true
-						management.endpoint.info.enabled=true
-
-						management.endpoints.web.exposure.include=health,info
-						management.endpoints.jmx.exposure.exclude=*
+						# allow access via http
+						management.endpoints.web.exposure.include=*
+						# Use a separate port for management endpoints. Required if LabKey is using default (ROOT) context path
+						#management.server.port=@@shutdownPort@@
 
 						management.endpoint.env.keys-to-sanitize=.*user.*,.*pass.*,secret,key,token,.*credentials.*,vcap_services,sun.java.command,.*key-store.*
 
-						info.labkey.version=${LABKEY_VERSION}
-						info.labkey.distribution=${LABKEY_DISTRIBUTION}
+						# Don't show the Spring banner on startup
+						spring.main.banner-mode=off
+						#logging.config=path/to/alternative/log4j2.xml
 
-						server.tomcat.max-threads=50
+						# Optional - JMS configuration for remote ActiveMQ message management for distributed pipeline jobs
+						# https://www.labkey.org/Documentation/wiki-page.view?name=jmsQueue
+						#context.resources.jms.name=jms/ConnectionFactory
+						#context.resources.jms.type=org.apache.activemq.ActiveMQConnectionFactory
+						#context.resources.jms.factory=org.apache.activemq.jndi.JNDIReferenceFactory
+						#context.resources.jms.description=JMS Connection Factory
+						#context.resources.jms.brokerURL=vm://localhost?broker.persistent=false&broker.useJmx=false
+						#context.resources.jms.brokerName=LocalActiveMQBroker
+
+						# Turn on JSON-formatted HTTP access logging to stdout. See issue 48565
+						# https://tomcat.apache.org/tomcat-9.0-doc/config/valve.html#JSON_Access_Log_Valve
+						#jsonaccesslog.enabled=true
+
+						# Optional configuration, modeled on the non-JSON Spring Boot properties
+						# https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.server.server.tomcat.accesslog.buffered
+						#jsonaccesslog.pattern=%h %t %m %U %s %b %D %S "%{Referer}i" "%{User-Agent}i" %{LABKEY.username}s
+						#jsonaccesslog.condition-if=attributeName
+						#jsonaccesslog.condition-unless=attributeName
+
+						# Define one or both of 'csp.report' and 'csp.enforce' to enable Content Security Policy (CSP) headers
+						# Do not copy-and-paste these examples for any production environment without understanding the meaning of each directive!
+
+						# example usage 1 - very strict, disallows 'external' websites, disallows unsafe-inline, but only reports violations (does not enforce)
+
+						#csp.report=\\
+						#    default-src 'self';\\
+						#    connect-src 'self' \${LABKEY.ALLOWED.CONNECTIONS} ;\\
+						#    object-src 'none' ;\\
+						#    style-src 'self' 'unsafe-inline' ;\\
+						#    img-src 'self' data: ;\\
+						#    font-src 'self' data: ;\\
+						#    script-src 'unsafe-eval' 'strict-dynamic' 'nonce-\${REQUEST.SCRIPT.NONCE}';\\
+						#    base-uri 'self' ;\\
+						#    upgrade-insecure-requests ;\\
+						#    frame-ancestors 'self' ;\\
+						#    report-uri https://www.labkey.org/admin-contentsecuritypolicyreport.api?\${CSP.REPORT.PARAMS} ;
+
+						# example usage 2 - less strict but enforces directives, (NOTE: unsafe-inline is still required for many modules)
+
+						#csp.enforce=\\
+						#    default-src 'self' https: ;\\
+						#    connect-src 'self' https: \${LABKEY.ALLOWED.CONNECTIONS};\\
+						#    object-src 'none' ;\\
+						#    style-src 'self' https: 'unsafe-inline' ;\\
+						#    img-src 'self' data: ;\\
+						#    font-src 'self' data: ;\\
+						#    script-src 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' 'nonce-\${REQUEST.SCRIPT.NONCE}';\\
+						#    base-uri 'self' ;\\
+						#    upgrade-insecure-requests ;\\
+						#    frame-ancestors 'self' ;\\
+						#    report-uri  https://www.labkey.org/admin-contentsecuritypolicyreport.api?\${CSP.REPORT.PARAMS} ;
+
+						# Use a non-temp directory for tomcat
+						server.tomcat.basedir=${TOMCAT_INSTALL_HOME}
+
+						# Enable tomcat access log
+						server.tomcat.accesslog.enabled=true
+						server.tomcat.accesslog.directory=${LABKEY_INSTALL_HOME}/logs
+						server.tomcat.accesslog.pattern=%h %l %u %t "%r" %s %b %D %S %I "%{Referrer}i" "%{User-Agent}i" %{LABKEY.username}s
+
+
 
 			APP_PROPS_HERE
     ) >"$NewFile"
@@ -597,90 +673,121 @@ function step_postgres_configure() {
 
   case "_$(platform)" in
   _amzn)
+    # Install the Postgresql repository RPM
+    # note this method is required for AMZN linux and supports PG versions 12-15 - v16 not supported by PG repo
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
+    fi
+
+    if [ ! -f "/etc/yum.repos.d/pgdg.repo" ]; then
+      NewPGRepoFile="/etc/yum.repos.d/pgdg.repo"
+      (
+        /bin/cat <<-PG_REPO_HERE
+				[pgdg$DEFAULT_POSTGRES_VERSION]
+				name=PostgreSQL $DEFAULT_POSTGRES_VERSION for RHEL/CentOS 7 - x86_64
+				baseurl=https://download.postgresql.org/pub/repos/yum/$DEFAULT_POSTGRES_VERSION/redhat/rhel-7-x86_64
+				enabled=1
+				gpgcheck=0
+
+				PG_REPO_HERE
+      ) >"$NewPGRepoFile"
+    fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo amazon-linux-extras enable postgresql11 epel
-      #amazon-linux-extras install epel
       sudo yum clean metadata
       sudo yum update -y
-      sudo yum install epel-release postgresql.x86_64 postgresql-server.x86_64 -y
+      sudo yum install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
       # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
       sudo yum install tomcat-native.x86_64 apr fontconfig -y
 
-      if [ ! -f /var/lib/pgsql/data/PG_VERSION ]; then
-        /usr/bin/postgresql-setup --initdb
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql
-      sudo systemctl start postgresql
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
-      sudo systemctl restart postgresql
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo amazon-linux-extras enable postgresql11 epel
-      #amazon-linux-extras install epel
       sudo yum clean metadata
-      sudo yum install epel-release postgresql.x86_64 -y
+      sudo yum install "postgresql-client-$DEFAULT_POSTGRES_VERSION" -y
       # TODO: These are pre-reqs for Amazon Linux - Move to the pre-reqs function
       sudo yum install tomcat-native.x86_64 apr fontconfig -y
       console_msg "Postgres Client Installed ..."
     fi
     ;;
 
-  _centos)
+  _almalinux)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
-      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-      sudo yum clean metadata
-      sudo yum update -y
+      sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+      sudo dnf -qy module disable postgresql
+      sudo dnf clean metadata
+      sudo dnf update -y
+    fi
+
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
     fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo yum install -y postgresql11-server
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
 
-      if [ ! -f /var/lib/pgsql/11/data/PG_VERSION ]; then
-        /usr/pgsql-11/bin/postgresql-11-setup initdb
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql-11
-      sudo systemctl start postgresql-11
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/11/data/pg_hba.conf
-      sudo systemctl restart postgresql-11
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo yum install -y postgresql11
+      sudo dnf clean metadata
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION" -y
       console_msg "Postgres Client Installed ..."
     fi
     ;;
 
   _rhel)
     if [ ! -e "/etc/yum.repos.d/pgdg-redhat-all.repo" ]; then
-      sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-      # Disable the built-in PostgreSQL module:
+      sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
       sudo dnf -qy module disable postgresql
-      sudo yum clean metadata
-      sudo yum update -y
+      sudo dnf clean metadata
+      sudo dnf update -y
+    fi
+
+    if [[ -z $POSTGRES_VERSION ]]; then
+      DEFAULT_POSTGRES_VERSION="15"
+    else
+      DEFAULT_POSTGRES_VERSION=$POSTGRES_VERSION
     fi
 
     if [ "$POSTGRES_SVR_LOCAL" == "TRUE" ]; then
-      sudo yum install -y postgresql12-server
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION-server" -y
 
-      if [ ! -f /var/lib/pgsql/12/data/PG_VERSION ]; then
-        /usr/pgsql-12/bin/postgresql-12-setup initdb
+      if [ ! -f "/var/lib/pgsql/data/$DEFAULT_POSTGRES_VERSION" ]; then
+        "/usr/pgsql-$DEFAULT_POSTGRES_VERSION/bin/postgresql-$DEFAULT_POSTGRES_VERSION-setup" initdb "postgresql-$DEFAULT_POSTGRES_VERSION"
       fi
-      sudo systemctl enable postgresql-12
-      sudo systemctl start postgresql-12
+      sudo systemctl enable "postgresql-$DEFAULT_POSTGRES_VERSION"
+      sudo systemctl start "postgresql-$DEFAULT_POSTGRES_VERSION"
       sudo -u postgres psql -c "create user $POSTGRES_USER password '$POSTGRES_PASSWORD';"
       sudo -u postgres psql -c "create database $POSTGRES_DB with owner $POSTGRES_USER;"
       sudo -u postgres psql -c "revoke all on database $POSTGRES_DB from public;"
-      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/12/data/pg_hba.conf
-      sudo systemctl restart postgresql-12
+      sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' "/var/lib/pgsql/$DEFAULT_POSTGRES_VERSION/data/pg_hba.conf"
+      sudo systemctl restart "postgresql-$DEFAULT_POSTGRES_VERSION"
       console_msg "Postgres Server and Client Installed ..."
     else
-      sudo yum install -y postgresql12
+      sudo dnf clean metadata
+      sudo dnf install "postgresql$DEFAULT_POSTGRES_VERSION" -y
       console_msg "Postgres Client Installed ..."
     fi
     ;;
@@ -840,6 +947,9 @@ function step_configure_labkey() {
       # copy jar file to LABKEY_INSTALL_HOME for tomcat_lk.service
       if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
         cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+      elif [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer.jar" ]; then
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
         cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
       else
         console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."

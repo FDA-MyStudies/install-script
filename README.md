@@ -2,6 +2,12 @@
 
 A repository for shell scripts that aid in the installation of LabKey products and services.
 
+## Supported Operating Systems
+
+- AlmaLinux 9
+- Amazon Linux v2
+- RedHat Enterprise Linux 9
+- Ubuntu 20.04 & 22.04
 
 ## LabKey Install Script Usage Examples
 
@@ -156,6 +162,7 @@ The following tables list the available input variables and default values. In t
 | POSTGRES_PROVISION_REMOTE_DB   | Flag to trigger provisioning of remote database - "TRUE" or "FALSE"         | FALSE                                  | no       |
 | POSTGRES_REMOTE_ADMIN_PASSWORD | Postgres Remote Admin Password                                              | NULL                                   | no       |
 | POSTGRES_REMOTE_ADMIN_USER     | Postgres Remote Admin username                                              | postgres_admin                         | no       |
+| POSTGRES_VERSION               | Postgres version to install (two digit value e.g. 16)                       | NULL                                   | no       |
 
 ### SMTP Inputs
 
