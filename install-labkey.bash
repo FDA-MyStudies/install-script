@@ -948,6 +948,9 @@ function step_configure_labkey() {
       if [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" ]; then
         cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer-${LABKEY_VERSION}.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
         cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
+      elif [ -f "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer.jar" ]; then
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/labkeyServer.jar" "${LABKEY_INSTALL_HOME}/labkeyServer.jar"
+        cp -a "${LABKEY_SRC_HOME}/${LABKEY_DIST_DIR}/VERSION" "${LABKEY_INSTALL_HOME}/VERSION"
       else
         console_msg "ERROR: Something is wrong. Unable copy ${LABKEY_INSTALL_HOME}/labkeyServer.jar, please verify LabKey Version and distribution."
         export ret=1
