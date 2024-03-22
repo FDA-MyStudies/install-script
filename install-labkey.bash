@@ -405,6 +405,7 @@ function step_os_prereqs() {
     DEB_JDK_REPO="https://packages.adoptium.net/artifactory/deb/"
     if ! grep -qs "$DEB_JDK_REPO" "/etc/apt/sources.list" "/etc/apt/sources.list.d/"*; then
       wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg >/dev/null
+      chmod 644 /etc/apt/trusted.gpg.d/adoptium.gpg
       echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list
     fi
     sudo DEBIAN_PRIORITY=critical DEBIAN_FRONTEND=noninteractive apt-get update
